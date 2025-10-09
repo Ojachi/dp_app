@@ -1,0 +1,24 @@
+.filters-sidebar {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 320px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -2px 0 18px rgba(0,0,0,0.18);
+  z-index: 1070;
+  transition: right 0.35s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+}
+.filters-sidebar.open {
+  right: 0;
+}
+.filters-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.18);
+  z-index: 1069;
+}
