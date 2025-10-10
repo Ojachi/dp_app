@@ -1,27 +1,79 @@
-import React from "react";
-import { CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell } from "@coreui/react";
+/**
+ * Componente de tabla compatible con Bootstrap 5
+ */
+import React from 'react';
 
-const Table = ({ columns, data, renderCell, ...props }) => (
-  <CTable {...props}>
-    <CTableHead>
-      <CTableRow>
-        {columns.map((col) => (
-          <CTableHeaderCell key={col.key || col.label}>{col.label}</CTableHeaderCell>
-        ))}
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {data.map((row, idx) => (
-        <CTableRow key={row.id || idx}>
+const Table = ({
+  columns = [],
+  data = [],
+  renderCell,
+  striped = false,
+  bordered = false,
+  hover = true,
+  responsive = true,
+  size = 'md',
+  className = '',
+  ...props
+}) => {
+  
+  const sizeClasses = {
+    sm: 'table-sm',
+    md: '',
+    lg: 'table-lg'
+  };
+
+  const tableClasses = [
+    'table',
+    striped ? 'table-striped' : '',
+    bordered ? 'table-bordered' : '',
+    hover ? 'table-hover' : '',
+    sizeClasses[size],
+    className
+  ].filter(Boolean).join(' ');
+
+  const TableComponent = (
+    <table className={tableClasses} {...props}>
+      <thead className="table-light">
+        <tr>
           {columns.map((col) => (
-            <CTableDataCell key={col.key || col.label}>
-              {renderCell ? renderCell(row, col) : row[col.key]}
-            </CTableDataCell>
+            <th key={col.key || col.label} scope="col">
+              {col.label}
+            </th>
           ))}
-        </CTableRow>
-      ))}
-    </CTableBody>
-  </CTable>
-);
+        </tr>
+      </thead>
+      <tbody>
+        {data.length === 0 ? (
+          <tr>
+            <td colSpan={columns.length} className="text-center py-4 text-muted">
+              No hay datos para mostrar
+            </td>
+          </tr>
+        ) : (
+          data.map((row, idx) => (
+            <tr key={row.id || idx}>
+              {columns.map((col) => (
+                <td key={col.key || col.label}>
+                  {renderCell ? renderCell(row, col) : row[col.key]}
+                </td>
+              ))}
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
 
+  if (responsive) {
+    return (
+      <div className="table-responsive">
+        {TableComponent}
+      </div>
+    );
+  }
+
+  return TableComponent;
+};
+
+export { Table };
 export default Table;

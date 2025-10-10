@@ -3,7 +3,6 @@
  */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { debugAuth } from '../utils/tokenDebug';
 
 const AuthContext = createContext();
 
@@ -107,20 +106,43 @@ export const AuthProvider = ({ children }) => {
   // Función para verificar permisos por rol
   const hasRole = (roles) => {
     if (!user) return false;
+    
     if (Array.isArray(roles)) {
-      return roles.includes(user.role || user.tipo_usuario);
+      return roles.some(role => {
+        switch (role) {
+          case 'gerente':
+            return user.is_gerente;
+          case 'vendedor':
+            return user.is_vendedor;
+          case 'distribuidor':
+            return user.is_distribuidor;
+          default:
+            return false;
+        }
+      });
     }
-    return user.role === roles || user.tipo_usuario === roles;
+    
+    // Si es un string individual
+    switch (roles) {
+      case 'gerente':
+        return user.is_gerente;
+      case 'vendedor':
+        return user.is_vendedor;
+      case 'distribuidor':
+        return user.is_distribuidor;
+      default:
+        return false;
+    }
   };
 
   // Función para verificar si es gerente
-  const isGerente = () => hasRole('gerente');
+  const isGerente = () => user?.is_gerente || false;
   
   // Función para verificar si es vendedor
-  const isVendedor = () => hasRole('vendedor');
+  const isVendedor = () => user?.is_vendedor || false;
   
   // Función para verificar si es distribuidor
-  const isDistribuidor = () => hasRole('distribuidor');
+  const isDistribuidor = () => user?.is_distribuidor || false;
 
   const value = {
     user,
@@ -131,9 +153,7 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     isGerente,
     isVendedor,
-    isDistribuidor,
-    // Función de debug para desarrollo
-    debugAuth: () => debugAuth()
+    isDistribuidor
   };
 
   return (

@@ -84,10 +84,12 @@ const Sidebar = () => {
       <div className="sidebar-footer p-3 border-top border-secondary">
         <div className="text-center">
           <small className="text-muted d-block">
-            {user?.first_name || user?.username}
+            {user?.first_name || user?.full_name || user?.email}
           </small>
           <small className="text-muted">
-            {user?.role || user?.tipo_usuario}
+            {user?.is_gerente ? 'Gerente' : 
+             user?.is_vendedor ? 'Vendedor' : 
+             user?.is_distribuidor ? 'Distribuidor' : 'Usuario'}
           </small>
         </div>
       </div>

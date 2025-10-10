@@ -1,297 +1,297 @@
-import React, { useState, useMemo } from "react";
-import Table from "../../components/Table";
-import Pagination from "../../components/Pagination";
-import Button from "../../components/Button";
-import Modal from "../../components/Modal";
-import Select from "../../components/Select";
-import Input from "../../components/Input";
-import Radio from "../../components/Radio";
-import Checkbox from "../../components/Checkbox";
-import SearchBar from "../../components/SearchBar";
-import FiltersSidebar from "../../components/FiltersSidebar";
-import { CContainer, CCol, CRow } from "@coreui/react";
+/**
+ * Vista principal del módulo de Pagos
+ */
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { pagosService } from '../../services/pagosService';
+import PagosTable from './components/PagosTable';
+import PagoForm from './components/PagoForm';
+import PagosFilters from './components/PagosFilters';
+import PagosDashboard from './components/PagosDashboard';
+import FacturasPendientes from './components/FacturasPendientes';
+import Modal from '../../components/Modal';
+import { Button } from '../../components/Button';
 
-// Columnas de tabla
-const TABLE_COLUMNS = [
-  { key: "id", label: "ID" },
-  { key: "responsable", label: "Responsable" },
-  { key: "factura", label: "Factura" },
-  { key: "valor", label: "Valor Pago" },
-  { key: "fecha", label: "Fecha" },
-];
-
-// Datos ejemplo de pagos
-const pagosEjemplo = [
-  {
-    id: 1,
-    responsable: "Juan Pérez",
-    factura: "FE 001-01-00001",
-    valor: 150000,
-    fecha: "2025-09-10",
-  },
-  {
-    id: 2,
-    responsable: "María López",
-    factura: "R 002-01-00005",
-    valor: 200000,
-    fecha: "2025-09-15",
-  },
-];
-
-// Datos ejemplo opciones selects
-const responsables = [
-  { value: "Juan Pérez", label: "Juan Pérez" },
-  { value: "María López", label: "María López" },
-];
-const facturas = [
-  { value: "FE 001-01-00001", label: "FE 001-01-00001" },
-  { value: "R 002-01-00005", label: "R 002-01-00005" },
-];
-const formasPago = [
-  { value: "efectivo", label: "Efectivo" },
-  { value: "consignacion", label: "Consignación" },
-];
-const cuentasConsignacion = [
-  { value: "banco1", label: "Bancolombia - 12345" },
-  { value: "banco2", label: "Davivienda - 54321" },
-];
-
-// Configuración dinámica de filtros para usar en FiltersSidebar
-const filterConfig = [
-  {
-    type: "select",
-    id: "responsable",
-    label: "Responsable",
-    options: [{ label: "Todos", value: "" }, ...responsables],
-  },
-  {
-    type: "input",
-    id: "precioMin",
-    label: "Precio mínimo",
-    inputType: "number",
-  },
-  {
-    type: "input",
-    id: "precioMax",
-    label: "Precio máximo",
-    inputType: "number",
-  },
-  {
-    type: "input",
-    id: "fechaInicio",
-    label: "Fecha inicio",
-    inputType: "date",
-  },
-  {
-    type: "input",
-    id: "fechaFin",
-    label: "Fecha fin",
-    inputType: "date",
-  },
-];
-
-const PagosView = ({ user = { rol: "vendedor" } }) => {
-  // Estados
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [filters, setFilters] = useState({
-    responsable: "",
-    precioMin: "",
-    precioMax: "",
-    fechaInicio: "",
-    fechaFin: "",
+const PagosView = () => {
+  const { hasRole } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [pagos, setPagos] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showPagoForm, setShowPagoForm] = useState(false);
+  const [editingPago, setEditingPago] = useState(null);
+  const [filters, setFilters] = useState({});
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20
   });
-  const [searchText, setSearchText] = useState("");
-  const [formaPago, setFormaPago] = useState("efectivo");
-  const [tieneNota, setTieneNota] = useState("no");
-  const [responsable, setResponsable] = useState("");
-  const [factura, setFactura] = useState("");
-  const [firma, setFirma] = useState("");
-  const [recibido, setRecibido] = useState(false);
 
-  const esVendedor = user.rol === "vendedor";
+  // Cargar datos del dashboard
+  const loadDashboardData = useCallback(async () => {
+    try {
+      const data = await pagosService.getDashboard(filters);
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error al cargar dashboard:', error);
+    }
+  }, [filters]);
 
-  // Filtrar pagos basado en búsqueda y filtros
-  const filteredPagos = useMemo(() => {
-    return pagosEjemplo.filter(
-      (p) =>
-        (!filters.responsable ||
-          p.responsable
-            .toLowerCase()
-            .includes(filters.responsable.toLowerCase())) &&
-        (!filters.precioMin || p.valor >= Number(filters.precioMin)) &&
-        (!filters.precioMax || p.valor <= Number(filters.precioMax)) &&
-        (!filters.fechaInicio || p.fecha >= filters.fechaInicio) &&
-        (!filters.fechaFin || p.fecha <= filters.fechaFin) &&
-        (p.responsable.toLowerCase().includes(searchText.toLowerCase()) ||
-          p.factura.toLowerCase().includes(searchText.toLowerCase()))
-    );
-  }, [filters, searchText]);
+  // Cargar pagos
+  const loadPagos = useCallback(async (page = 1) => {
+    try {
+      const response = await pagosService.getPagos({
+        ...filters,
+        page: page,
+        page_size: pagination.itemsPerPage
+      });
 
-  // Maneja el envio del formulario de pago
-  const handleAgregarPago = (e) => {
-    e.preventDefault();
-    // Aquí la lógica para guardar pago en backend
-    setModalAbierto(false);
+      setPagos(response.results || []);
+      setPagination(prev => ({
+        ...prev,
+        currentPage: page,
+        totalItems: response.count || 0,
+        totalPages: Math.ceil((response.count || 0) / pagination.itemsPerPage)
+      }));
+    } catch (error) {
+      console.error('Error al cargar pagos:', error);
+      setPagos([]);
+    }
+  }, [filters, pagination.itemsPerPage]);
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        await loadDashboardData();
+        if (activeTab === 'listado') {
+          await loadPagos();
+        }
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [activeTab, filters, loadDashboardData, loadPagos]);
+
+  // Manejar creación/actualización de pago
+  const handlePagoSubmit = async (pagoData) => {
+    try {
+      if (editingPago) {
+        await pagosService.updatePago(editingPago.id, pagoData);
+      } else {
+        await pagosService.createPago(pagoData);
+      }
+
+      setShowPagoForm(false);
+      setEditingPago(null);
+      
+      // Recargar datos
+      loadDashboardData();
+      if (activeTab === 'listado') {
+        loadPagos(pagination.currentPage);
+      }
+
+      // Mostrar mensaje de éxito (aquí podrías usar un toast)
+      alert(editingPago ? 'Pago actualizado correctamente' : 'Pago registrado correctamente');
+    } catch (error) {
+      console.error('Error al guardar pago:', error);
+      alert('Error al guardar el pago: ' + error.message);
+    }
   };
 
-  // Formulario para el modal
-  const formularioPago = (
-    <form onSubmit={handleAgregarPago}>
-      {user.rol !== "vendedor" && (
-        <Select
-          id="responsable"
-          label="Responsable"
-          options={responsables}
-          value={responsable}
-          onChange={(e) => setResponsable(e.target.value)}
-        />
-      )}
-      <Select
-        id="factura"
-        label="Factura"
-        options={facturas}
-        value={factura}
-        onChange={(e) => setFactura(e.target.value)}
-      />
-      <Input
-        id="valorPago"
-        type="number"
-        placeholder="Valor del pago"
-        label="Valor del Pago"
-      />
-      <Radio
-        name="nota"
-        label="¿Tiene nota?"
-        options={[
-          { value: "si", label: "Sí" },
-          { value: "no", label: "No" },
-        ]}
-        value={tieneNota}
-        onChange={(e) => setTieneNota(e.target.value)}
-      />
-      {tieneNota === "si" && (
-        <>
-          <Input
-            id="valorNota"
-            placeholder="Valor de la nota"
-            label="Valor Nota"
-          />
-          <Input
-            id="motivoNota"
-            placeholder="Motivo de la nota"
-            label="Motivo Nota"
-          />
-        </>
-      )}
-      {esVendedor && (
-        <>
-          <Input id="descuento" placeholder="Descuento" label="Descuento" />
-          <Input
-            id="retencion"
-            placeholder="Retención (FE)"
-            label="Retención"
-          />
-          <Input id="ica" placeholder="ICA (FE)" label="ICA" />
-        </>
-      )}
-      <Select
-        id="formaPago"
-        label="Forma de Pago"
-        options={formasPago}
-        value={formaPago}
-        onChange={(e) => setFormaPago(e.target.value)}
-      />
-      {formaPago === "consignacion" && (
-        <>
-          <Select
-            id="cuentaPago"
-            label="Cuenta de Pago"
-            options={cuentasConsignacion}
-          />
-          <Input id="soportePago" type="file" label="Soporte de Pago" />
-        </>
-      )}
-      {formaPago === "efectivo" && (
-        <Input
-          id="firma"
-          placeholder="Firma del responsable"
-          label="Firma"
-          value={firma}
-          onChange={(e) => setFirma(e.target.value)}
-        />
-      )}
-      {user.rol === "admin" && (
-        <Checkbox
-          id="recibido"
-          label="¿Recibido?"
-          checked={recibido}
-          onChange={(e) => setRecibido(e.target.checked)}
-        />
-      )}
-      <div className="d-flex justify-content-end mt-3">
-        <Button
-          color="secondary"
-          onClick={() => setModalAbierto(false)}
-          type="button"
-        >
-          Cancelar
-        </Button>
-        <Button color="primary" type="submit" className="ms-2">
-          Guardar Pago
-        </Button>
-      </div>
-    </form>
-  );
+  // Manejar eliminación de pago
+  const handleDeletePago = async (pagoId) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar este pago?')) {
+      return;
+    }
+
+    try {
+      await pagosService.deletePago(pagoId);
+      loadPagos(pagination.currentPage);
+      loadDashboardData();
+      alert('Pago eliminado correctamente');
+    } catch (error) {
+      console.error('Error al eliminar pago:', error);
+      alert('Error al eliminar el pago: ' + error.message);
+    }
+  };
+
+  // Manejar edición de pago
+  const handleEditPago = (pago) => {
+    setEditingPago(pago);
+    setShowPagoForm(true);
+  };
+
+  // Aplicar filtros
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
+    setPagination({ ...pagination, currentPage: 1 });
+  };
+
+  // Exportar reporte
+  const handleExportReport = async (formato) => {
+    try {
+      await pagosService.exportarReporte(filters, formato);
+    } catch (error) {
+      console.error('Error al exportar reporte:', error);
+      alert('Error al exportar el reporte: ' + error.message);
+    }
+  };
 
   return (
-    <div>
-      <h1>Gestión De Pagos</h1>
-      <CContainer fluid>
-        <CRow className="align-items-center mb-3">
-          <CCol xs={12} md={7}>
-            <SearchBar value={searchText} onChange={setSearchText} />
-          </CCol>
-          <CCol xs={6} md={4} style={{ textAlign: "right" }}>
-            <Button
-              color="primary"
-              
-              onClick={() => setModalAbierto(true)}
-            >
-              Agregar Pago
-            </Button>
-          </CCol>
-          <CCol xs={6} md={1} style={{ textAlign: "right" }}>
-            <Button
-              color="primary"
-              
-              onClick={() => setFiltersVisible(true)}
-            >
-              Filtros
-            </Button>
-          </CCol>
-          
-        </CRow>
-      </CContainer>
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col-12">
+          {/* Header */}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+              <i className="fas fa-money-bill-wave me-2"></i>
+              Gestión de Pagos
+            </h2>
+            <div className="d-flex gap-2">
+              {hasRole('crear_pago') && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowPagoForm(true)}
+                >
+                  <i className="fas fa-plus me-2"></i>
+                  Registrar Pago
+                </Button>
+              )}
+              <div className="dropdown">
+                <button
+                  className="btn btn-outline-secondary dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                >
+                  <i className="fas fa-download me-2"></i>
+                  Exportar
+                </button>
+                <ul className="dropdown-menu">
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => handleExportReport('excel')}
+                    >
+                      <i className="fas fa-file-excel me-2"></i>
+                      Excel
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => handleExportReport('pdf')}
+                    >
+                      <i className="fas fa-file-pdf me-2"></i>
+                      PDF
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-      <Table columns={TABLE_COLUMNS} data={filteredPagos} bordered />
-      <Pagination page={1} pageCount={1} onPageChange={() => {}} />
+          {/* Tabs de navegación */}
+          <div className="card">
+            <div className="card-header border-0">
+              <ul className="nav nav-tabs card-header-tabs">
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('dashboard')}
+                  >
+                    <i className="fas fa-chart-pie me-2"></i>
+                    Dashboard
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === 'listado' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('listado')}
+                  >
+                    <i className="fas fa-list me-2"></i>
+                    Listado de Pagos
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === 'pendientes' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('pendientes')}
+                  >
+                    <i className="fas fa-clock me-2"></i>
+                    Facturas Pendientes
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="card-body p-0">
+              {/* Dashboard Tab */}
+              {activeTab === 'dashboard' && (
+                <div className="p-4">
+                  <PagosDashboard
+                    data={dashboardData}
+                    loading={loading}
+                    onFiltersChange={handleFiltersChange}
+                  />
+                </div>
+              )}
+
+              {/* Listado Tab */}
+              {activeTab === 'listado' && (
+                <div>
+                  <PagosFilters
+                    filters={filters}
+                    onFiltersChange={handleFiltersChange}
+                    onReset={() => setFilters({})}
+                  />
+                  <PagosTable
+                    pagos={pagos}
+                    loading={loading}
+                    pagination={pagination}
+                    onPageChange={loadPagos}
+                    onEdit={hasRole('editar_pago') ? handleEditPago : null}
+                    onDelete={hasRole('eliminar_pago') ? handleDeletePago : null}
+                  />
+                </div>
+              )}
+
+              {/* Pendientes Tab */}
+              {activeTab === 'pendientes' && (
+                <div className="p-4">
+                  <FacturasPendientes />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de formulario de pago */}
       <Modal
-        visible={modalAbierto}
-        onClose={() => setModalAbierto(false)}
-        title="Agregar Pago"
+        show={showPagoForm}
+        onHide={() => {
+          setShowPagoForm(false);
+          setEditingPago(null);
+        }}
+        title={editingPago ? 'Editar Pago' : 'Registrar Nuevo Pago'}
+        size="lg"
       >
-        {formularioPago}
+        <PagoForm
+          pago={editingPago}
+          onSubmit={handlePagoSubmit}
+          onCancel={() => {
+            setShowPagoForm(false);
+            setEditingPago(null);
+          }}
+        />
       </Modal>
-      <FiltersSidebar
-        visible={filtersVisible}
-        onClose={() => setFiltersVisible(false)}
-        filters={filters}
-        setFilters={setFilters}
-        filterConfig={filterConfig}
-        responsables={responsables}
-        
-      />
     </div>
   );
 };
