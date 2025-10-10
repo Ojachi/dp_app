@@ -1,16 +1,26 @@
+/**
+ * Componente principal de la aplicación
+ */
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import AppRoutes from './routes/AppRoutes';
-import '@coreui/coreui/dist/css/coreui.min.css';
+import AuthDebugPanel from './components/AuthDebugPanel';
 import './styles/layout.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 function App() {
   return (
     <BrowserRouter>
-      <MainLayout>
-        <AppRoutes />
-      </MainLayout>
+      <AuthProvider>
+        <MainLayout>
+          <AppRoutes />
+        </MainLayout>
+        {/* Panel de debug solo en desarrollo */}
+        <AuthDebugPanel />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
