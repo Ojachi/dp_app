@@ -1,9 +1,32 @@
 /**
  * Dashboard de Pagos - Métricas y estadísticas
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const PagosDashboard = ({ data, loading, onFiltersChange }) => {
+  const tendenciaSemanal = useMemo(
+    () => (Array.isArray(data?.tendencia_semanal) ? data.tendencia_semanal : []),
+    [data]
+  );
+
+  const totalesUltimosDias = useMemo(() => {
+    if (!tendenciaSemanal.length) {
+      return { cantidad: 0, monto: 0 };
+    }
+    return tendenciaSemanal.reduce(
+      (acc, item) => ({
+        cantidad: acc.cantidad + (item.pagos || 0),
+        monto: acc.monto + Number(item.monto || 0)
+      }),
+      { cantidad: 0, monto: 0 }
+    );
+  }, [tendenciaSemanal]);
+
+  const maxPagosTendencia = useMemo(
+    () => tendenciaSemanal.reduce((max, item) => Math.max(max, item.pagos || 0), 0) || 1,
+    [tendenciaSemanal]
+  );
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -24,37 +47,44 @@ const PagosDashboard = ({ data, loading, onFiltersChange }) => {
     );
   }
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(Number(amount || 0));
+
+  const estadisticasGenerales = data.estadisticas_generales || {};
+  const pagosMesActual = data.pagos_mes_actual || {};
 
   const metricCards = [
     {
-      title: 'Pagos Hoy',
-      value: data.total_pagos_hoy,
-      amount: data.monto_pagos_hoy,
-      icon: 'fas fa-calendar-day',
+      title: 'Total de Pagos',
+      value: estadisticasGenerales.total_pagos ?? 0,
+      amount: estadisticasGenerales.monto_total ?? 0,
+      icon: 'fas fa-money-bill-wave',
       color: 'primary'
     },
     {
-      title: 'Pagos del Mes',
-      value: data.total_pagos_mes,
-      amount: data.monto_pagos_mes,
+      title: 'Pagos Mes Actual',
+      value: pagosMesActual.cantidad ?? 0,
+      amount: pagosMesActual.monto ?? 0,
       icon: 'fas fa-calendar-alt',
       color: 'success'
     },
     {
-      title: 'Facturas Pendientes',
-      value: data.facturas_pendientes,
-      amount: data.monto_pendiente,
+      title: 'Pagos últimos 7 días',
+      value: totalesUltimosDias.cantidad,
+      amount: totalesUltimosDias.monto,
       icon: 'fas fa-clock',
-      color: 'warning'
+      color: 'info'
     }
   ];
+
+  const formatTendenciaLabel = (fechaISO) => {
+    if (!fechaISO) return 'N/D';
+    const date = new Date(fechaISO);
+    return new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric' }).format(date);
+  };
 
   return (
     <div>
@@ -97,26 +127,30 @@ const PagosDashboard = ({ data, loading, onFiltersChange }) => {
             </div>
             <div className="card-body">
               <div className="row text-center">
-                {data.tendencia_semanal?.map((item, index) => (
-                  <div key={index} className="col">
-                    <div className="border-end" style={{ height: '100px' }}>
-                      <small className="text-muted d-block">{item.dia}</small>
-                      <div 
-                        className="bg-primary rounded mx-auto mb-2"
-                        style={{ 
-                          height: `${(item.pagos / 30) * 60}px`,
-                          width: '20px',
-                          minHeight: '10px'
-                        }}
-                      ></div>
-                      <small className="fw-bold text-primary">{item.pagos}</small>
-                      <br />
-                      <small className="text-muted">
-                        {formatCurrency(item.monto)}
-                      </small>
+                {tendenciaSemanal.map((item, index) => {
+                  const altura = Math.max((item.pagos || 0) / maxPagosTendencia * 80, 10);
+                  return (
+                    <div key={index} className="col">
+                      <div className="border-end" style={{ height: '120px' }}>
+                        <small className="text-muted d-block text-capitalize">
+                          {formatTendenciaLabel(item.fecha)}
+                        </small>
+                        <div
+                          className="bg-primary rounded mx-auto mb-2"
+                          style={{
+                            height: `${altura}px`,
+                            width: '18px'
+                          }}
+                        ></div>
+                        <small className="fw-bold text-primary">{item.pagos ?? 0}</small>
+                        <br />
+                        <small className="text-muted">
+                          {formatCurrency(item.monto)}
+                        </small>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -135,18 +169,22 @@ const PagosDashboard = ({ data, loading, onFiltersChange }) => {
               {Object.entries(data.pagos_por_metodo || {}).map(([metodo, datos], index) => {
                 const colors = ['primary', 'success', 'info', 'warning', 'secondary'];
                 const color = colors[index % colors.length];
-                const porcentaje = ((datos.cantidad / data.total_pagos_mes) * 100).toFixed(1);
+                const totalBase = pagosMesActual.cantidad || estadisticasGenerales.total_pagos || 0;
+                const porcentaje = totalBase > 0
+                  ? ((datos.cantidad / totalBase) * 100).toFixed(1)
+                  : '0.0';
+                const displayName = datos.nombre || metodo;
 
                 return (
                   <div key={metodo} className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
-                      <span className="text-capitalize">{metodo}</span>
+                      <span className="text-capitalize">{displayName}</span>
                       <small className="text-muted">{datos.cantidad} pagos</small>
                     </div>
                     <div className="progress mb-1" style={{ height: '8px' }}>
                       <div 
                         className={`progress-bar bg-${color}`}
-                        style={{ width: `${porcentaje}%` }}
+                        style={{ width: `${Number.parseFloat(porcentaje) || 0}%` }}
                       ></div>
                     </div>
                     <div className="d-flex justify-content-between">
@@ -174,16 +212,19 @@ const PagosDashboard = ({ data, loading, onFiltersChange }) => {
             <div className="card-body">
               <div className="row g-3">
                 <div className="col-md-3">
-                  <button 
+                  <button
                     className="btn btn-outline-primary w-100 py-3"
-                    onClick={() => onFiltersChange({ fecha_desde: new Date().toISOString().split('T')[0] })}
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      onFiltersChange({ fecha_desde: today, fecha_hasta: today });
+                    }}
                   >
                     <i className="fas fa-calendar-day d-block mb-2 fs-4"></i>
                     <span>Pagos de Hoy</span>
                   </button>
                 </div>
                 <div className="col-md-3">
-                  <button 
+                  <button
                     className="btn btn-outline-success w-100 py-3"
                     onClick={() => {
                       const primerDiaDelMes = new Date();
@@ -196,18 +237,22 @@ const PagosDashboard = ({ data, loading, onFiltersChange }) => {
                   </button>
                 </div>
                 <div className="col-md-3">
-                  <button 
+                  <button
                     className="btn btn-outline-warning w-100 py-3"
-                    onClick={() => onFiltersChange({ estado: 'pendiente' })}
+                    onClick={() => {
+                      const sieteDiasAtras = new Date();
+                      sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 6);
+                      onFiltersChange({ fecha_desde: sieteDiasAtras.toISOString().split('T')[0], fecha_hasta: new Date().toISOString().split('T')[0] });
+                    }}
                   >
-                    <i className="fas fa-clock d-block mb-2 fs-4"></i>
-                    <span>Pagos Pendientes</span>
+                    <i className="fas fa-history d-block mb-2 fs-4"></i>
+                    <span>Últimos 7 días</span>
                   </button>
                 </div>
                 <div className="col-md-3">
-                  <button 
+                  <button
                     className="btn btn-outline-info w-100 py-3"
-                    onClick={() => onFiltersChange({ metodo_pago: 'efectivo' })}
+                    onClick={() => onFiltersChange({ tipo_pago: 'efectivo' })}
                   >
                     <i className="fas fa-money-bill d-block mb-2 fs-4"></i>
                     <span>Pagos en Efectivo</span>

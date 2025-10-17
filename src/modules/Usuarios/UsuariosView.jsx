@@ -4,19 +4,20 @@
 import React, { useState, useEffect } from 'react';
 import { useUsuarios } from '../../hooks/useUsuarios';
 import { useAuth } from '../../context/AuthContext';
-import UsuariosDashboard from './UsuariosDashboard';
+// MVP: ocultar dashboard y logs; mantener lista y formulario
 import UsuariosList from './UsuariosList';
 import UsuariosFilters from './UsuariosFilters';
 import UsuarioForm from './UsuarioForm';
-import UsuariosLogs from './UsuariosLogs';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
+import { useToast } from '../../components/Toast';
 
 const UsuariosView = () => {
+  const { toast } = useToast();
   const { user } = useAuth();
   const {
     usuarios,
-    estadisticas,
+  // estadisticas,
     loading,
     error,
     loadUsuarios,
@@ -31,12 +32,12 @@ const UsuariosView = () => {
   } = useUsuarios();
 
   // Estados locales
-  const [vista, setVista] = useState('dashboard'); // 'dashboard' | 'lista' | 'logs'
+  // MVP: solo 'lista'
+  const [vista] = useState('lista');
   const [filtros, setFiltros] = useState({
     buscar: '',
     is_active: '',
-    rol: '',
-    ciudad: ''
+    rol: ''
   });
   const [selectedUsuarios, setSelectedUsuarios] = useState([]);
   const [showModalForm, setShowModalForm] = useState(false);
@@ -61,8 +62,7 @@ const UsuariosView = () => {
     setFiltros({
       buscar: '',
       is_active: '',
-      rol: '',
-      ciudad: ''
+      rol: ''
     });
   };
 
@@ -146,9 +146,10 @@ const UsuariosView = () => {
       await resetearPassword(usuarioPassword.id, password);
       setShowPasswordModal(false);
       setUsuarioPassword(null);
-      alert('Contraseña actualizada exitosamente');
+      toast.success('Contraseña actualizada exitosamente');
     } catch (error) {
       console.error('Error al resetear contraseña:', error);
+      toast.error('Error al resetear contraseña');
     }
   };
 
@@ -191,41 +192,13 @@ const UsuariosView = () => {
           <p className="text-muted">Administración de usuarios del sistema</p>
         </div>
         <div className="col-md-6 text-end">
-          {/* Botones de vista */}
-          <div className="btn-group me-3" role="group">
-            <Button
-              variant={vista === 'dashboard' ? 'primary' : 'outline-primary'}
-              size="sm"
-              onClick={() => setVista('dashboard')}
-            >
-              <i className="bi bi-speedometer2 me-1"></i>
-              Dashboard
-            </Button>
-            <Button
-              variant={vista === 'lista' ? 'primary' : 'outline-primary'}
-              size="sm"
-              onClick={() => setVista('lista')}
-            >
-              <i className="bi bi-people me-1"></i>
-              Usuarios
-            </Button>
-            <Button
-              variant={vista === 'logs' ? 'primary' : 'outline-primary'}
-              size="sm"
-              onClick={() => setVista('logs')}
-            >
-              <i className="bi bi-journal-text me-1"></i>
-              Logs
-            </Button>
-          </div>
-
           {/* Botón crear usuario */}
           <Button
             variant="primary"
             size="sm"
             onClick={handleCrearUsuario}
           >
-            <i className="bi bi-person-plus me-1"></i>
+            <i className="fas fa-user-plus me-1"></i>
             Nuevo Usuario
           </Button>
         </div>
@@ -234,7 +207,7 @@ const UsuariosView = () => {
       {/* Alertas de error */}
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
+          <i className="fas fa-exclamation-triangle me-2"></i>
           {error}
           <button 
             type="button" 
@@ -246,10 +219,6 @@ const UsuariosView = () => {
       )}
 
       {/* Contenido principal */}
-      {vista === 'dashboard' && (
-        <UsuariosDashboard estadisticas={estadisticas} />
-      )}
-
       {vista === 'lista' && (
         <>
           {/* Barra de herramientas */}
@@ -261,7 +230,7 @@ const UsuariosView = () => {
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
                 >
-                  <i className="bi bi-funnel me-1"></i>
+                  <i className="fas fa-filter me-1"></i>
                   Filtros
                 </Button>
                 
@@ -272,7 +241,7 @@ const UsuariosView = () => {
                 )}
               </div>
             </div>
-            <div className="col-md-6 text-end">
+            {/* <div className="col-md-6 text-end">
               <div className="btn-group" role="group">
                 <Button
                   variant="outline-secondary"
@@ -293,7 +262,7 @@ const UsuariosView = () => {
                   PDF
                 </Button>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Filtros */}
@@ -318,10 +287,6 @@ const UsuariosView = () => {
             onResetPassword={handleResetPassword}
           />
         </>
-      )}
-
-      {vista === 'logs' && (
-        <UsuariosLogs />
       )}
 
       {/* Modal de formulario */}

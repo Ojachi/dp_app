@@ -3,7 +3,6 @@
  */
 import React, { useState, useEffect } from 'react';
 import Input from '../../components/Input';
-import Select from '../../components/Select';
 import Button from '../../components/Button';
 import { useUsuarios } from '../../hooks/useUsuarios';
 
@@ -15,15 +14,11 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
     email: '',
     first_name: '',
     last_name: '',
-    telefono: '',
-    direccion: '',
-    ciudad: '',
     password: '',
     confirm_password: '',
     is_gerente: false,
     is_vendedor: false,
-    is_distribuidor: false,
-    is_active: true
+    is_distribuidor: false
   });
 
   const [errors, setErrors] = useState({});
@@ -39,24 +34,14 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
         email: usuario.email || '',
         first_name: usuario.first_name || '',
         last_name: usuario.last_name || '',
-        telefono: usuario.telefono || '',
-        direccion: usuario.direccion || '',
-        ciudad: usuario.ciudad || '',
         password: '', // No mostrar contraseña existente
         confirm_password: '',
         is_gerente: usuario.is_gerente || false,
         is_vendedor: usuario.is_vendedor || false,
-        is_distribuidor: usuario.is_distribuidor || false,
-        is_active: usuario.is_active !== undefined ? usuario.is_active : true
+        is_distribuidor: usuario.is_distribuidor || false
       });
     }
   }, [usuario]);
-
-  // Opciones para el selector de estado
-  const opcionesEstado = [
-    { value: true, label: 'Activo' },
-    { value: false, label: 'Inactivo' }
-  ];
 
   // Manejo de cambios en el formulario
   const handleChange = (campo, valor) => {
@@ -184,11 +169,6 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
       newErrors.roles = 'Debe seleccionar al menos un rol';
     }
 
-    // Validar teléfono si se proporciona
-    if (formData.telefono && !/^[+]?[\d\s\-()]{7,}$/.test(formData.telefono)) {
-      newErrors.telefono = 'El teléfono no tiene un formato válido';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -309,38 +289,6 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           </>
         )}
 
-        {/* Información de contacto */}
-        <div className="col-md-6">
-          <Input
-            label="Teléfono"
-            value={formData.telefono}
-            onChange={(e) => handleChange('telefono', e.target.value)}
-            placeholder="+57 300 123 4567"
-            error={errors.telefono}
-          />
-        </div>
-
-        <div className="col-md-6">
-          <Input
-            label="Ciudad"
-            value={formData.ciudad}
-            onChange={(e) => handleChange('ciudad', e.target.value)}
-            placeholder="Bogotá"
-            error={errors.ciudad}
-          />
-        </div>
-
-        {/* Dirección */}
-        <div className="col-12">
-          <Input
-            label="Dirección"
-            value={formData.direccion}
-            onChange={(e) => handleChange('direccion', e.target.value)}
-            placeholder="Calle 123 #45-67"
-            error={errors.direccion}
-          />
-        </div>
-
         {/* Roles */}
         <div className="col-12">
           <label className="form-label">Rol del Usuario *</label>
@@ -397,16 +345,6 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           {errors.roles && (
             <div className="text-danger small mt-1">{errors.roles}</div>
           )}
-        </div>
-
-        {/* Estado del usuario */}
-        <div className="col-md-6">
-          <Select
-            label="Estado del Usuario"
-            value={formData.is_active}
-            onChange={(e) => handleChange('is_active', e.target.value === 'true')}
-            options={opcionesEstado}
-          />
         </div>
 
         {/* Error general */}

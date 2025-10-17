@@ -2,6 +2,7 @@
  * Formulario para crear/editar facturas
  */
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../../components/Toast';
 import { Input } from '../../../components/Input';
 import { Select } from '../../../components/Select';
 import { DatePicker } from '../../../components/DatePicker';
@@ -17,6 +18,7 @@ const FacturaForm = ({
   loading = false,
   errors = {}
 }) => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     numero_factura: '',
     cliente_id: '',
@@ -98,7 +100,7 @@ const FacturaForm = ({
 
   const agregarProducto = () => {
     if (!producto.nombre || !producto.cantidad || !producto.valor_unitario) {
-      alert('Por favor complete todos los campos del producto');
+      toast.warning('Por favor complete todos los campos del producto');
       return;
     }
 
@@ -153,7 +155,7 @@ const FacturaForm = ({
     
     // Validaciones básicas
     if (!formData.numero_factura || !formData.cliente_id || !formData.valor_total) {
-      alert('Por favor complete los campos requeridos');
+      toast.warning('Por favor complete los campos requeridos');
       return;
     }
 

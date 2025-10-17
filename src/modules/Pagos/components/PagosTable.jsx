@@ -1,23 +1,22 @@
-/**
- * Tabla de Pagos con paginación y acciones
- */
-import React, { useState } from 'react';
+import React from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { pagosService } from '../../../services/pagosService';
+import { useToast } from '../../../components/Toast';
 import { Table } from '../../../components/Table';
 import { Pagination } from '../../../components/Pagination';
 import { Button } from '../../../components/Button';
-import PagoDetalleModal from './PagoDetalleModal';
 
-const PagosTable = ({ 
-  pagos, 
-  loading, 
-  pagination, 
-  onPageChange, 
-  onEdit, 
-  onDelete 
+const PagosTable = ({
+  pagos,
+  loading,
+  pagination,
+  onPageChange,
+  onView,
+  onEdit,
+  onDelete,
 }) => {
-  const [selectedPago, setSelectedPago] = useState(null);
-  const [showDetalleModal, setShowDetalleModal] = useState(false);
-  
+  const { hasRole } = useAuth();
+  const { toast } = useToast();
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -27,103 +26,68 @@ const PagosTable = ({
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) {
+      return 'Sin fecha';
+    }
     return new Date(dateString).toLocaleDateString('es-CO');
   };
 
-  const getEstadoBadge = (estado) => {
-    const estados = {
-      'completado': 'success',
-      'pendiente': 'warning',
-      'cancelado': 'danger',
-      'procesando': 'info'
-    };
-    
-    return (
-      <span className={`badge bg-${estados[estado] || 'secondary'}`}>
-        {estado?.toUpperCase() || 'N/A'}
-      </span>
-    );
-  };
-
-  const getMetodoPagoIcon = (metodo) => {
-    const iconos = {
-      'efectivo': 'fas fa-money-bill',
-      'transferencia': 'fas fa-exchange-alt',
-      'cheque': 'fas fa-check-square',
-      'tarjeta': 'fas fa-credit-card',
-      'consignacion': 'fas fa-university',
-      'otro': 'fas fa-ellipsis-h'
-    };
-    
-    return iconos[metodo] || 'fas fa-question';
-  };
-
   const columns = [
-    {
-      key: 'numero',
-      header: 'Número',
-      render: (pago) => (
-        <div>
-          <div className="fw-medium">{pago.numero || `P-${pago.id}`}</div>
-          <small className="text-muted">{formatDate(pago.fecha_pago)}</small>
-        </div>
-      )
-    },
     {
       key: 'factura',
       header: 'Factura',
       render: (pago) => (
         <div>
-          <div className="fw-medium">{pago.factura?.numero || 'N/A'}</div>
+          <div className="fw-medium">
+            {pago.factura_numero || pago.factura?.numero_factura || `Factura #${pago.factura}`}
+          </div>
           <small className="text-muted">
-            Cliente: {pago.factura?.cliente?.nombre || pago.cliente?.nombre || 'N/A'}
+            Pago realizado el {formatDate(pago.fecha_pago)}
           </small>
         </div>
       )
     },
     {
-      key: 'monto',
-      header: 'Monto',
+      key: 'cliente',
+      header: 'Cliente',
       render: (pago) => (
-        <div className="text-end">
-          <div className="fw-bold text-success">
-            {formatCurrency(pago.monto)}
-          </div>
-          {pago.monto_aplicado && pago.monto_aplicado !== pago.monto && (
-            <small className="text-muted">
-              Aplicado: {formatCurrency(pago.monto_aplicado)}
-            </small>
+        <div>
+          <div className="fw-medium">{pago.cliente_nombre || pago.factura?.cliente?.nombre || 'N/D'}</div>
+          {pago.factura?.cliente?.email && (
+            <small className="text-muted">{pago.factura.cliente.email}</small>
           )}
         </div>
       )
     },
     {
-      key: 'metodo_pago',
-      header: 'Método',
+      key: 'valor',
+      header: 'Valor pagado',
       render: (pago) => (
-        <div className="d-flex align-items-center">
-          <i className={`${getMetodoPagoIcon(pago.metodo_pago)} me-2 text-primary`}></i>
-          <span className="text-capitalize">
-            {pago.metodo_pago_display || pago.metodo_pago || 'N/A'}
+        <div className="text-end">
+          <span className="fw-bold text-success">
+            {formatCurrency(pago.valor_pagado || pago.monto || 0)}
           </span>
         </div>
       )
     },
     {
-      key: 'estado',
-      header: 'Estado',
-      render: (pago) => getEstadoBadge(pago.estado)
-    },
-    {
-      key: 'usuario',
-      header: 'Registrado por',
+      key: 'tipo_pago',
+      header: 'Tipo de pago',
       render: (pago) => (
-        <div>
-          <small className="text-muted">
-            {pago.usuario?.full_name || pago.usuario?.email || 'N/A'}
-          </small>
+        <div className="d-flex align-items-center gap-2">
+          <span className="text-capitalize">{pago.tipo_pago || 'Sin dato'}</span>
+          {pago.estado && (
+            <span className={`badge bg-${pago.estado === 'confirmado' ? 'success' : pago.estado === 'registrado' ? 'warning text-dark' : 'secondary'}`}>
+              {pago.estado}
+            </span>
+          )}
         </div>
       )
+    },
+    {
+      key: 'comprobante',
+      header: 'Comprobante',
+      render: (pago) => pago.numero_comprobante || '—',
     },
     {
       key: 'acciones',
@@ -134,10 +98,28 @@ const PagosTable = ({
             variant="outline-info"
             size="sm"
             title="Ver detalles"
-            onClick={() => handleViewDetails(pago)}
+            onClick={() => onView?.(pago.id)}
           >
             <i className="fas fa-eye"></i>
           </Button>
+          {hasRole('gerente') && pago.estado === 'registrado' && (
+            <Button
+              variant="outline-success"
+              size="sm"
+              title="Confirmar pago"
+              onClick={async () => {
+                try {
+                  await pagosService.confirmPago(pago.id);
+                  toast.success('Pago confirmado');
+                  onPageChange?.(pagination.currentPage);
+                } catch (e) {
+                  toast.error(e.message || 'No se pudo confirmar el pago');
+                }
+              }}
+            >
+              <i className="fas fa-check"></i>
+            </Button>
+          )}
           {onEdit && (
             <Button
               variant="outline-primary"
@@ -148,7 +130,7 @@ const PagosTable = ({
               <i className="fas fa-edit"></i>
             </Button>
           )}
-          {onDelete && pago.estado !== 'completado' && (
+          {onDelete && (
             <Button
               variant="outline-danger"
               size="sm"
@@ -162,11 +144,6 @@ const PagosTable = ({
       )
     }
   ];
-
-  const handleViewDetails = (pago) => {
-    setSelectedPago(pago);
-    setShowDetalleModal(true);
-  };
 
   if (loading) {
     return (
@@ -196,22 +173,16 @@ const PagosTable = ({
   return (
     <div>
       <div className="table-responsive">
-        <Table
-          columns={columns}
-          data={pagos}
-          striped
-          hover
-        />
+        <Table columns={columns} data={pagos} striped hover />
       </div>
 
-      {/* Información de paginación */}
       <div className="d-flex justify-content-between align-items-center p-3 border-top">
         <div className="text-muted">
-          Mostrando {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} a {' '}
-          {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} de {' '}
+          Mostrando {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} a{' '}
+          {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} de{' '}
           {pagination.totalItems} registros
         </div>
-        
+
         <Pagination
           currentPage={pagination.currentPage}
           totalPages={pagination.totalPages}
@@ -219,16 +190,6 @@ const PagosTable = ({
           showFirstLast
         />
       </div>
-
-      {/* Modal de detalles */}
-      <PagoDetalleModal
-        pago={selectedPago}
-        show={showDetalleModal}
-        onHide={() => {
-          setShowDetalleModal(false);
-          setSelectedPago(null);
-        }}
-      />
     </div>
   );
 };

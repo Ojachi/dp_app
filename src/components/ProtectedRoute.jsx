@@ -3,6 +3,7 @@
  */
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_PRIVATE_ROUTE } from '../config/featureFlags';
 
 const ProtectedRoute = ({ 
   children, 
@@ -10,7 +11,7 @@ const ProtectedRoute = ({
   redirectTo = '/login',
   requireAuth = true 
 }) => {
-  const { isAuthenticated, user, loading, hasRole } = useAuth();
+  const { isAuthenticated, loading, hasRole } = useAuth();
   const location = useLocation();
 
   // Mostrar loading mientras se verifica la autenticación
@@ -31,25 +32,7 @@ const ProtectedRoute = ({
 
   // Si se especifican roles y el usuario no tiene el rol requerido
   if (roles.length > 0 && !hasRole(roles)) {
-    // Redirigir al dashboard apropiado según el rol del usuario
-    const userRole = user?.role || user?.tipo_usuario;
-    let dashboardPath = '/dashboard';
-    
-    switch (userRole) {
-      case 'gerente':
-        dashboardPath = '/dashboard';
-        break;
-      case 'vendedor':
-        dashboardPath = '/dashboard/vendedor';
-        break;
-      case 'distribuidor':
-        dashboardPath = '/dashboard/distribuidor';
-        break;
-      default:
-        dashboardPath = '/dashboard';
-    }
-    
-    return <Navigate to={dashboardPath} replace />;
+    return <Navigate to={DEFAULT_PRIVATE_ROUTE} replace />;
   }
 
   // Si todo está bien, renderizar el componente

@@ -7,19 +7,27 @@ import { pagosService } from '../../services/pagosService';
 import PagosTable from './components/PagosTable';
 import PagoForm from './components/PagoForm';
 import PagosFilters from './components/PagosFilters';
-import PagosDashboard from './components/PagosDashboard';
-import FacturasPendientes from './components/FacturasPendientes';
+// MVP: dashboard de pagos oculto
+// import PagosDashboard from './components/PagosDashboard';
+import PagoDetalleModal from './components/PagoDetalleModal';
 import Modal from '../../components/Modal';
 import { Button } from '../../components/Button';
+import { useToast } from '../../components/Toast';
 
 const PagosView = () => {
   const { hasRole } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { toast } = useToast();
+  // MVP: solo listado visible
+  const [activeTab, setActiveTab] = useState('listado');
   const [pagos, setPagos] = useState([]);
-  const [dashboardData, setDashboardData] = useState(null);
+  // MVP: sin estado de dashboard
   const [loading, setLoading] = useState(false);
   const [showPagoForm, setShowPagoForm] = useState(false);
   const [editingPago, setEditingPago] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [showDetalleModal, setShowDetalleModal] = useState(false);
+  const [detallePago, setDetallePago] = useState(null);
+  const [detalleLoading, setDetalleLoading] = useState(false);
   const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -29,14 +37,8 @@ const PagosView = () => {
   });
 
   // Cargar datos del dashboard
-  const loadDashboardData = useCallback(async () => {
-    try {
-      const data = await pagosService.getDashboard(filters);
-      setDashboardData(data);
-    } catch (error) {
-      console.error('Error al cargar dashboard:', error);
-    }
-  }, [filters]);
+  // MVP: se omite carga de dashboard
+  const loadDashboardData = useCallback(async () => {}, []);
 
   // Cargar pagos
   const loadPagos = useCallback(async (page = 1) => {
@@ -47,12 +49,18 @@ const PagosView = () => {
         page_size: pagination.itemsPerPage
       });
 
-      setPagos(response.results || []);
+      const data = Array.isArray(response?.results)
+        ? response.results
+        : Array.isArray(response)
+          ? response
+          : [];
+
+      setPagos(data);
       setPagination(prev => ({
         ...prev,
         currentPage: page,
-        totalItems: response.count || 0,
-        totalPages: Math.ceil((response.count || 0) / pagination.itemsPerPage)
+        totalItems: response.count || data.length || 0,
+        totalPages: Math.max(1, Math.ceil((response.count || data.length || 0) / pagination.itemsPerPage))
       }));
     } catch (error) {
       console.error('Error al cargar pagos:', error);
@@ -65,10 +73,7 @@ const PagosView = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        await loadDashboardData();
-        if (activeTab === 'listado') {
-          await loadPagos();
-        }
+        await loadPagos();
       } catch (error) {
         console.error('Error al cargar datos:', error);
       } finally {
@@ -83,13 +88,18 @@ const PagosView = () => {
   const handlePagoSubmit = async (pagoData) => {
     try {
       if (editingPago) {
-        await pagosService.updatePago(editingPago.id, pagoData);
+        if (pagoData && pagoData.__action__ === 'confirmed') {
+          // Confirmación ya realizada desde el formulario
+        } else {
+          await pagosService.updatePago(editingPago.id, pagoData);
+        }
       } else {
         await pagosService.createPago(pagoData);
       }
 
       setShowPagoForm(false);
       setEditingPago(null);
+      setFormLoading(false);
       
       // Recargar datos
       loadDashboardData();
@@ -97,11 +107,14 @@ const PagosView = () => {
         loadPagos(pagination.currentPage);
       }
 
-      // Mostrar mensaje de éxito (aquí podrías usar un toast)
-      alert(editingPago ? 'Pago actualizado correctamente' : 'Pago registrado correctamente');
+      // Notificación de éxito
+      let message = 'Pago registrado correctamente';
+      if (editingPago) message = 'Pago actualizado correctamente';
+      if (pagoData && pagoData.__action__ === 'confirmed') message = 'Pago confirmado correctamente';
+      toast.success(message);
     } catch (error) {
       console.error('Error al guardar pago:', error);
-      alert('Error al guardar el pago: ' + error.message);
+      toast.error('Error al guardar el pago: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
@@ -115,17 +128,42 @@ const PagosView = () => {
       await pagosService.deletePago(pagoId);
       loadPagos(pagination.currentPage);
       loadDashboardData();
-      alert('Pago eliminado correctamente');
+      toast.success('Pago eliminado correctamente');
     } catch (error) {
       console.error('Error al eliminar pago:', error);
-      alert('Error al eliminar el pago: ' + error.message);
+      toast.error('Error al eliminar el pago: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
   // Manejar edición de pago
-  const handleEditPago = (pago) => {
-    setEditingPago(pago);
+  const handleEditPago = async (pago) => {
+    setFormLoading(true);
     setShowPagoForm(true);
+    try {
+      const detalle = await pagosService.getPagoById(pago.id);
+      setEditingPago(detalle);
+    } catch (error) {
+      console.error('Error al obtener pago para edición:', error);
+      toast.error('No fue posible cargar la información del pago.');
+      setShowPagoForm(false);
+      setEditingPago(null);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleViewPago = async (pagoId) => {
+    try {
+      setDetalleLoading(true);
+      const detalle = await pagosService.getPagoById(pagoId);
+      setDetallePago(detalle);
+      setShowDetalleModal(true);
+    } catch (error) {
+      console.error('Error al obtener pago:', error);
+      toast.error('No fue posible cargar el detalle del pago.');
+    } finally {
+      setDetalleLoading(false);
+    }
   };
 
   // Aplicar filtros
@@ -138,9 +176,10 @@ const PagosView = () => {
   const handleExportReport = async (formato) => {
     try {
       await pagosService.exportarReporte(filters, formato);
+      toast.success('Exportación iniciada');
     } catch (error) {
       console.error('Error al exportar reporte:', error);
-      alert('Error al exportar el reporte: ' + error.message);
+      toast.error('Error al exportar el reporte: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
@@ -155,10 +194,14 @@ const PagosView = () => {
               Gestión de Pagos
             </h2>
             <div className="d-flex gap-2">
-              {hasRole('crear_pago') && (
+              {hasRole(['gerente', 'vendedor', 'distribuidor']) && (
                 <Button
                   variant="primary"
-                  onClick={() => setShowPagoForm(true)}
+                  onClick={() => {
+                    setEditingPago(null);
+                    setFormLoading(false);
+                    setShowPagoForm(true);
+                  }}
                 >
                   <i className="fas fa-plus me-2"></i>
                   Registrar Pago
@@ -201,15 +244,7 @@ const PagosView = () => {
           <div className="card">
             <div className="card-header border-0">
               <ul className="nav nav-tabs card-header-tabs">
-                <li className="nav-item">
-                  <button
-                    className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('dashboard')}
-                  >
-                    <i className="fas fa-chart-pie me-2"></i>
-                    Dashboard
-                  </button>
-                </li>
+                {/* MVP: pestaña de dashboard oculta */}
                 <li className="nav-item">
                   <button
                     className={`nav-link ${activeTab === 'listado' ? 'active' : ''}`}
@@ -219,29 +254,13 @@ const PagosView = () => {
                     Listado de Pagos
                   </button>
                 </li>
-                <li className="nav-item">
-                  <button
-                    className={`nav-link ${activeTab === 'pendientes' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('pendientes')}
-                  >
-                    <i className="fas fa-clock me-2"></i>
-                    Facturas Pendientes
-                  </button>
-                </li>
+                {/* MVP: se elimina la pestaña de Facturas Pendientes en Pagos */}
               </ul>
             </div>
 
             <div className="card-body p-0">
               {/* Dashboard Tab */}
-              {activeTab === 'dashboard' && (
-                <div className="p-4">
-                  <PagosDashboard
-                    data={dashboardData}
-                    loading={loading}
-                    onFiltersChange={handleFiltersChange}
-                  />
-                </div>
-              )}
+              {/* MVP: no dashboard */}
 
               {/* Listado Tab */}
               {activeTab === 'listado' && (
@@ -256,18 +275,14 @@ const PagosView = () => {
                     loading={loading}
                     pagination={pagination}
                     onPageChange={loadPagos}
-                    onEdit={hasRole('editar_pago') ? handleEditPago : null}
-                    onDelete={hasRole('eliminar_pago') ? handleDeletePago : null}
+                    onView={handleViewPago}
+                    onEdit={hasRole('gerente') ? handleEditPago : null}
+                    onDelete={hasRole('gerente') ? handleDeletePago : null}
                   />
                 </div>
               )}
 
-              {/* Pendientes Tab */}
-              {activeTab === 'pendientes' && (
-                <div className="p-4">
-                  <FacturasPendientes />
-                </div>
-              )}
+              {/* MVP: sin pestaña de Facturas Pendientes */}
             </div>
           </div>
         </div>
@@ -279,6 +294,7 @@ const PagosView = () => {
         onHide={() => {
           setShowPagoForm(false);
           setEditingPago(null);
+          setFormLoading(false);
         }}
         title={editingPago ? 'Editar Pago' : 'Registrar Nuevo Pago'}
         size="lg"
@@ -289,9 +305,21 @@ const PagosView = () => {
           onCancel={() => {
             setShowPagoForm(false);
             setEditingPago(null);
+            setFormLoading(false);
           }}
+          initialLoading={formLoading}
         />
       </Modal>
+
+      <PagoDetalleModal
+        pago={detallePago}
+        show={showDetalleModal}
+        loading={detalleLoading}
+        onHide={() => {
+          setShowDetalleModal(false);
+          setDetallePago(null);
+        }}
+      />
     </div>
   );
 };

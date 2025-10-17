@@ -69,15 +69,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
             />
           </div>
 
-          {/* Ciudad */}
-          <div className="col-md-2">
-            <Input
-              label="Ciudad"
-              placeholder="Ciudad..."
-              value={filtros.ciudad}
-              onChange={(e) => handleChange('ciudad', e.target.value)}
-            />
-          </div>
+          {/* Ciudad removida en MVP/backend */}
 
           {/* Botón de limpiar */}
           <div className="col-md-2 d-flex align-items-end">
@@ -136,17 +128,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
                   </span>
                 )}
                 
-                {filtros.ciudad && (
-                  <span className="badge bg-light text-dark">
-                    Ciudad: {filtros.ciudad}
-                    <button 
-                      type="button" 
-                      className="btn-close btn-close-sm ms-1"
-                      onClick={() => handleChange('ciudad', '')}
-                      aria-label="Quitar filtro"
-                    ></button>
-                  </span>
-                )}
+                {/* Ciudad removida */}
               </div>
             </div>
           </div>

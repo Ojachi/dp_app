@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LoginForm from './LoginForm';
 import './Auth.css';
+import { DEFAULT_PRIVATE_ROUTE } from '../../config/featureFlags';
 
 const LoginView = () => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ const LoginView = () => {
   const { login } = useAuth();
 
   // Obtener la ruta desde donde fue redirigido (si existe)
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || DEFAULT_PRIVATE_ROUTE;
 
   const handleLogin = async (credentials) => {
     setLoading(true);
@@ -25,28 +26,8 @@ const LoginView = () => {
       const result = await login(credentials);
       
       if (result.success) {
-        // Redirigir según el rol del usuario o a la página original
-        const userRole = result.user?.role || result.user?.tipo_usuario;
-        let dashboardPath = from;
-        
-        // Si viene del root, definir dashboard según rol
-        if (from === '/dashboard' || from === '/') {
-          switch (userRole) {
-            case 'gerente':
-              dashboardPath = '/dashboard';
-              break;
-            case 'vendedor':
-              dashboardPath = '/dashboard';
-              break;
-            case 'distribuidor':
-              dashboardPath = '/dashboard';
-              break;
-            default:
-              dashboardPath = '/dashboard';
-          }
-        }
-        
-        navigate(dashboardPath, { replace: true });
+        // Redirigir a la ruta de destino (o la por defecto)
+        navigate(from || DEFAULT_PRIVATE_ROUTE, { replace: true });
       } else {
         setError(result.error || 'Credenciales incorrectas');
       }

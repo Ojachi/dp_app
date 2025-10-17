@@ -2,7 +2,7 @@
  * Servicio para gestión de usuarios
  * Proporciona funcionalidades CRUD para administrar usuarios del sistema
  */
-import apiClient from './apiClient';
+import apiClient from './api';
 
 // Datos de respaldo para desarrollo
 const BACKUP_USERS = [
@@ -164,16 +164,20 @@ class UsuariosService {
   // Obtener lista de usuarios con filtros
   async getUsuarios(filtros = {}) {
     try {
-      const params = new URLSearchParams();
-      
+      // Build query using axios params to avoid manual string concat
+      const params = {};
       Object.keys(filtros).forEach(key => {
-        if (filtros[key] !== '' && filtros[key] !== null && filtros[key] !== undefined) {
-          params.append(key, filtros[key]);
+        const v = filtros[key];
+        if (v !== '' && v !== null && v !== undefined) {
+          params[key] = v;
         }
       });
 
-      const response = await apiClient.get(`/usuarios/?${params.toString()}`);
-      return response.data;
+      const response = await apiClient.get('/users/', { params });
+      // Normalize to array whether paginated or not
+      return Array.isArray(response.data)
+        ? response.data
+        : (response.data?.results || []);
     } catch (error) {
       console.warn('API no disponible, usando datos de respaldo:', error);
       
@@ -213,12 +217,8 @@ class UsuariosService {
         );
       }
       
-      return {
-        results: filteredUsers,
-        count: filteredUsers.length,
-        next: null,
-        previous: null
-      };
+      // Mantener mismo contrato: devolver siempre array
+      return filteredUsers;
     }
   }
 

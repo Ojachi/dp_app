@@ -6,8 +6,18 @@ import { pagosService } from '../../../services/pagosService';
 import { SearchBar } from '../../../components/SearchBar';
 import { Button } from '../../../components/Button';
 
+const ALLOWED_FILTER_KEYS = ['search', 'tipo_pago', 'fecha_desde', 'fecha_hasta', 'factura_id'];
+
+const sanitizeFilters = (filters = {}) => {
+  return Object.fromEntries(
+    Object.entries(filters).filter(([key, value]) =>
+      ALLOWED_FILTER_KEYS.includes(key) && value !== null && value !== undefined && value !== ''
+    )
+  );
+};
+
 const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
-  const [localFilters, setLocalFilters] = useState(filters || {});
+  const [localFilters, setLocalFilters] = useState(() => sanitizeFilters(filters));
   const [metodosPago, setMetodosPago] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -16,7 +26,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
   }, []);
 
   useEffect(() => {
-    setLocalFilters(filters || {});
+    setLocalFilters(sanitizeFilters(filters));
   }, [filters]);
 
   const loadMetodosPago = async () => {
@@ -34,12 +44,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
   };
 
   const handleApplyFilters = () => {
-    // Limpiar filtros vacíos
-    const cleanFilters = Object.fromEntries(
-      Object.entries(localFilters).filter(([_, value]) => 
-        value !== null && value !== undefined && value !== ''
-      )
-    );
+    const cleanFilters = sanitizeFilters(localFilters);
     onFiltersChange(cleanFilters);
   };
 
@@ -49,9 +54,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
   };
 
   const getActiveFiltersCount = () => {
-    return Object.values(localFilters).filter(value => 
-      value !== null && value !== undefined && value !== ''
-    ).length;
+    return Object.keys(sanitizeFilters(localFilters)).length;
   };
 
   return (
@@ -70,8 +73,8 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
           <div className="col-md-3">
             <select
               className="form-select"
-              value={localFilters.metodo_pago || ''}
-              onChange={(e) => handleFilterChange('metodo_pago', e.target.value)}
+              value={localFilters.tipo_pago || ''}
+              onChange={(e) => handleFilterChange('tipo_pago', e.target.value)}
             >
               <option value="">Todos los métodos</option>
               {metodosPago.map(metodo => (
@@ -111,7 +114,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
           <div className="mt-3 pt-3 border-top">
             <div className="row g-3">
               {/* Fechas */}
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label small">Fecha desde</label>
                 <input
                   type="date"
@@ -120,7 +123,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
                   onChange={(e) => handleFilterChange('fecha_desde', e.target.value)}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label small">Fecha hasta</label>
                 <input
                   type="date"
@@ -129,78 +132,14 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
                   onChange={(e) => handleFilterChange('fecha_hasta', e.target.value)}
                 />
               </div>
-
-              {/* Montos */}
-              <div className="col-md-3">
-                <label className="form-label small">Monto mínimo</label>
+              <div className="col-md-4">
+                <label className="form-label small">ID de factura</label>
                 <input
                   type="number"
                   className="form-control form-control-sm"
-                  placeholder="0"
-                  value={localFilters.monto_min || ''}
-                  onChange={(e) => handleFilterChange('monto_min', e.target.value)}
-                />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label small">Monto máximo</label>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  placeholder="Sin límite"
-                  value={localFilters.monto_max || ''}
-                  onChange={(e) => handleFilterChange('monto_max', e.target.value)}
-                />
-              </div>
-
-              {/* Estado */}
-              <div className="col-md-3">
-                <label className="form-label small">Estado</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={localFilters.estado || ''}
-                  onChange={(e) => handleFilterChange('estado', e.target.value)}
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="completado">Completado</option>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="procesando">Procesando</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
-
-              {/* Cliente */}
-              <div className="col-md-3">
-                <label className="form-label small">Cliente</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Nombre del cliente"
-                  value={localFilters.cliente || ''}
-                  onChange={(e) => handleFilterChange('cliente', e.target.value)}
-                />
-              </div>
-
-              {/* Referencia */}
-              <div className="col-md-3">
-                <label className="form-label small">Referencia</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Número de referencia"
-                  value={localFilters.referencia || ''}
-                  onChange={(e) => handleFilterChange('referencia', e.target.value)}
-                />
-              </div>
-
-              {/* Usuario */}
-              <div className="col-md-3">
-                <label className="form-label small">Registrado por</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Usuario"
-                  value={localFilters.usuario || ''}
-                  onChange={(e) => handleFilterChange('usuario', e.target.value)}
+                  placeholder="Ej. 1024"
+                  value={localFilters.factura_id || ''}
+                  onChange={(e) => handleFilterChange('factura_id', e.target.value)}
                 />
               </div>
             </div>
@@ -233,7 +172,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
         <div className="px-3 pb-2">
           <div className="d-flex flex-wrap gap-1">
             <small className="text-muted me-2">Filtros activos:</small>
-            {Object.entries(localFilters).map(([key, value]) => {
+            {Object.entries(sanitizeFilters(localFilters)).map(([key, value]) => {
               if (!value) return null;
               
               let label = key;
@@ -244,19 +183,14 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
                 search: 'Búsqueda',
                 fecha_desde: 'Desde',
                 fecha_hasta: 'Hasta',
-                monto_min: 'Min',
-                monto_max: 'Max',
-                metodo_pago: 'Método',
-                estado: 'Estado',
-                cliente: 'Cliente',
-                referencia: 'Referencia',
-                usuario: 'Usuario'
+                tipo_pago: 'Tipo de pago',
+                factura_id: 'Factura'
               };
               
               if (labels[key]) label = labels[key];
               
               // Formatear valor para métodos de pago
-              if (key === 'metodo_pago') {
+              if (key === 'tipo_pago') {
                 const metodo = metodosPago.find(m => m.id === value);
                 displayValue = metodo ? metodo.nombre : value;
               }
@@ -272,7 +206,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
                       const newFilters = { ...localFilters };
                       delete newFilters[key];
                       setLocalFilters(newFilters);
-                      onFiltersChange(newFilters);
+                      onFiltersChange(sanitizeFilters(newFilters));
                     }}
                   ></button>
                 </span>

@@ -329,9 +329,9 @@ const FacturaDetail = ({
                         <tr>
                           <th>Fecha</th>
                           <th>Valor</th>
-                          <th>Método</th>
-                          <th>Referencia</th>
-                          <th>Estado</th>
+                          <th>Tipo de pago</th>
+                          <th>Comprobante</th>
+                          <th>Registrado por</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -339,25 +339,20 @@ const FacturaDetail = ({
                           <tr key={pago.id}>
                             <td>{formatDate(pago.fecha_pago)}</td>
                             <td className="fw-bold text-success">
-                              {formatCurrency(pago.valor_pago)}
+                              {formatCurrency(pago.valor_pagado || 0)}
                             </td>
                             <td>
                               <i className={`fas ${
-                                pago.metodo_pago === 'efectivo' ? 'fa-money-bill' :
-                                pago.metodo_pago === 'transferencia' ? 'fa-university' :
-                                pago.metodo_pago === 'cheque' ? 'fa-money-check' : 'fa-credit-card'
+                                pago.tipo_pago === 'efectivo' ? 'fa-money-bill' :
+                                pago.tipo_pago === 'transferencia' ? 'fa-university' :
+                                pago.tipo_pago === 'cheque' ? 'fa-money-check' : 'fa-credit-card'
                               } me-1`}></i>
-                              {pago.metodo_pago}
-                            </td>
-                            <td>{pago.referencia || '-'}</td>
-                            <td>
-                              <span className={`badge ${
-                                pago.estado === 'confirmado' ? 'bg-success' :
-                                pago.estado === 'pendiente' ? 'bg-warning' : 'bg-danger'
-                              }`}>
-                                {pago.estado}
+                              <span className="text-capitalize">
+                                {(pago.tipo_pago || 'sin dato').replace(/_/g, ' ')}
                               </span>
                             </td>
+                            <td>{pago.numero_comprobante || '-'}</td>
+                            <td>{pago.usuario_nombre || 'N/D'}</td>
                           </tr>
                         ))}
                       </tbody>

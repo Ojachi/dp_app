@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../components/Toast';
 import Modal from '../../components/Modal';
 
 const DetalleCliente = ({ 
@@ -12,6 +13,7 @@ const DetalleCliente = ({
   registrarGestionCobranza,
   enviarEstadoCuenta
 }) => {
+  const { toast } = useToast();
   const [showModalLimite, setShowModalLimite] = useState(false);
   const [showModalGestion, setShowModalGestion] = useState(false);
   const [nuevoLimite, setNuevoLimite] = useState('');
@@ -30,7 +32,11 @@ const DetalleCliente = ({
 
   useEffect(() => {
     if (detalleCliente) {
-      setNuevoLimite(detalleCliente.limiteCredito.toString());
+      setNuevoLimite(
+        detalleCliente.limiteCredito != null
+          ? detalleCliente.limiteCredito.toString()
+          : ''
+      );
     }
   }, [detalleCliente]);
 
@@ -43,6 +49,9 @@ const DetalleCliente = ({
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) {
+      return '--';
+    }
     return new Date(dateString).toLocaleDateString('es-CO');
   };
 
@@ -51,9 +60,9 @@ const DetalleCliente = ({
       await actualizarLimiteCredito(clienteId, parseFloat(nuevoLimite), observacionesLimite);
       setShowModalLimite(false);
       setObservacionesLimite('');
-      alert('Límite de crédito actualizado exitosamente');
+      toast.success('Límite de crédito actualizado exitosamente');
     } catch (error) {
-      alert('Error al actualizar límite: ' + error.message);
+      toast.error('Error al actualizar límite: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
@@ -66,9 +75,9 @@ const DetalleCliente = ({
         resultado: '',
         observaciones: ''
       });
-      alert('Gestión registrada exitosamente');
+      toast.success('Gestión registrada exitosamente');
     } catch (error) {
-      alert('Error al registrar gestión: ' + error.message);
+      toast.error('Error al registrar gestión: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
@@ -82,7 +91,9 @@ const DetalleCliente = ({
     );
   }
 
-  const porcentajeUsoCredito = (detalleCliente.totalDeuda / detalleCliente.limiteCredito) * 100;
+  const porcentajeUsoCredito = detalleCliente.limiteCredito
+    ? (detalleCliente.totalDeuda / detalleCliente.limiteCredito) * 100
+    : 0;
   const facturaVencida = detalleCliente.facturas?.find(f => f.estado === 'Vencida');
 
   return (

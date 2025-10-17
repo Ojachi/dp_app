@@ -1,32 +1,19 @@
 /**
- * Configuración base de la API con manejo de tokens JWT
+ * Configuración base de la API con manejo de Token (DRF Token Authentication)
  */
 import axios from 'axios';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// Funciones para manejo de token
+// Funciones para manejo de token (opaco, no es JWT)
 const TOKEN_KEY = 'authToken';
 
 export const tokenManager = {
   getToken: () => localStorage.getItem(TOKEN_KEY),
   setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
   removeToken: () => localStorage.removeItem(TOKEN_KEY),
-  isTokenValid: () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return false;
-    
-    try {
-      // Decodificar el payload del JWT (sin verificar la firma)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      
-      // Verificar si el token no ha expirado
-      return payload.exp > currentTime;
-    } catch (error) {
-      return false;
-    }
-  }
+  // Para DRF Token, consideramos válido si existe; la expiración se valida en el servidor
+  isTokenValid: () => Boolean(localStorage.getItem(TOKEN_KEY)),
 };
 
 // Crear instancia de axios con configuración base

@@ -20,13 +20,13 @@ const UsuariosList = ({
 
   // Función para obtener el badge de rol
   const getRoleBadge = (usuario) => {
-    if (usuario.is_gerente) {
+    if (usuario.roles.includes('Gerente')) {
       return <span className="badge bg-success">Gerente</span>;
     }
-    if (usuario.is_vendedor) {
+    if (usuario.roles.includes('Vendedor')) {
       return <span className="badge bg-primary">Vendedor</span>;
     }
-    if (usuario.is_distribuidor) {
+    if (usuario.roles.includes('Distribuidor')) {
       return <span className="badge bg-info">Distribuidor</span>;
     }
     return <span className="badge bg-secondary">Usuario</span>;
@@ -39,18 +39,6 @@ const UsuariosList = ({
         {is_active ? 'Activo' : 'Inactivo'}
       </span>
     );
-  };
-
-  // Función para formatear fecha
-  const formatFecha = (fecha) => {
-    if (!fecha) return 'Nunca';
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   // Configuración de columnas
@@ -79,7 +67,7 @@ const UsuariosList = ({
         <div className="d-flex align-items-center justify-content-center">
           <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
                style={{ width: '35px', height: '35px', fontSize: '14px' }}>
-            {usuario.first_name?.charAt(0)}{usuario.last_name?.charAt(0)}
+            {usuario.name?.charAt(0)}
           </div>
         </div>
       ),
@@ -90,16 +78,16 @@ const UsuariosList = ({
       header: 'Usuario',
       render: (usuario) => (
         <div>
-          <div className="fw-semibold">{usuario.full_name}</div>
-          <div className="text-muted small">@{usuario.username}</div>
-        </div>
+          <div className="fw-semibold">{usuario.name}</div>
+          <div className="text-muted small">@{usuario.name}</div>
+        </div>  
       )
     },
     {
       key: 'email',
       header: 'Email',
       render: (usuario) => usuario.email,
-      width: '200px'
+      width: '220px'
     },
     {
       key: 'rol',
@@ -108,40 +96,29 @@ const UsuariosList = ({
       width: '120px'
     },
     {
-      key: 'contacto',
-      header: 'Contacto',
-      render: (usuario) => (
-        <div>
-          {usuario.telefono && <div className="small">{usuario.telefono}</div>}
-          {usuario.ciudad && <div className="text-muted small">{usuario.ciudad}</div>}
-        </div>
-      ),
-      width: '150px'
-    },
-    {
       key: 'estado',
       header: 'Estado',
       render: (usuario) => getEstadoBadge(usuario.is_active),
       width: '100px'
     },
-    {
-      key: 'fecha_registro',
-      header: 'Registro',
-      render: (usuario) => (
-        <small>{formatFecha(usuario.date_joined)}</small>
-      ),
-      width: '120px'
-    },
-    {
-      key: 'ultimo_login',
-      header: 'Último Login',
-      render: (usuario) => (
-        <small className={usuario.last_login ? 'text-success' : 'text-warning'}>
-          {formatFecha(usuario.last_login)}
-        </small>
-      ),
-      width: '120px'
-    },
+    // {
+    //   key: 'fecha_registro',
+    //   header: 'Registro',
+    //   render: (usuario) => (
+    //     <small>{formatFecha(usuario.date_joined)}</small>
+    //   ),
+    //   width: '120px'
+    // },
+    // {
+    //   key: 'ultimo_login',
+    //   header: 'Último Login',
+    //   render: (usuario) => (
+    //     <small className={usuario.last_login ? 'text-success' : 'text-warning'}>
+    //       {formatFecha(usuario.last_login)}
+    //     </small>
+    //   ),
+    //   width: '120px'
+    // },
     {
       key: 'acciones',
       header: 'Acciones',
@@ -154,7 +131,7 @@ const UsuariosList = ({
             onClick={() => onEditar(usuario)}
             title="Editar usuario"
           >
-            <i className="bi bi-pencil"></i>
+            <i className="fas fa-pencil-alt"></i>
           </Button>
 
           {/* Activar/Desactivar */}
@@ -164,7 +141,7 @@ const UsuariosList = ({
             onClick={() => onToggleStatus(usuario.id, !usuario.is_active)}
             title={usuario.is_active ? "Desactivar" : "Activar"}
           >
-            <i className={`bi bi-${usuario.is_active ? 'pause' : 'play'}`}></i>
+            <i className={`fas fa-${usuario.is_active ? 'pause' : 'play'}`}></i>
           </Button>
 
           {/* Reset Password */}
@@ -174,7 +151,7 @@ const UsuariosList = ({
             onClick={() => onResetPassword(usuario)}
             title="Resetear contraseña"
           >
-            <i className="bi bi-key"></i>
+            <i className="fas fa-key"></i>
           </Button>
 
           {/* Eliminar (desactivar) */}
@@ -183,9 +160,9 @@ const UsuariosList = ({
               variant="outline-danger"
               size="sm"
               onClick={() => onEliminar(usuario.id)}
-              title="Desactivar usuario"
+              title="Eliminar usuario"
             >
-              <i className="bi bi-person-x"></i>
+              <i className="fas fa-user-minus"></i>
             </Button>
           )}
         </div>
@@ -221,7 +198,7 @@ const UsuariosList = ({
           emptyMessage="No se encontraron usuarios"
           responsive
           hover
-          className="mb-0"
+          className="mb-100"
         />
       </div>
 

@@ -17,7 +17,8 @@ export const useUsuarios = () => {
       setLoading(true);
       setError(null);
       const response = await usuariosService.getUsuarios(filtros);
-      setUsuarios(response.results || []);
+      setUsuarios(response);
+      console.log('Usuarios cargados:', response);
       return response;
     } catch (err) {
       setError(err.message);

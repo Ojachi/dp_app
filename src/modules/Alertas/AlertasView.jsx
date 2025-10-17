@@ -1,12 +1,10 @@
 /**
- * AlertasView - Vista principal del módulo de alertas
+ * AlertasView - Vista simplificada para revisar notificaciones generadas por el backend
  */
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAlertas } from '../../hooks/useAlertas';
 import { useAuth } from '../../context/AuthContext';
-import AlertasDashboard from './AlertasDashboard';
 import AlertasList from './AlertasList';
-import AlertasFilters from './AlertasFilters';
 import AlertaForm from './AlertaForm';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -21,104 +19,47 @@ const AlertasView = () => {
     loadAlertas,
     loadContadores,
     marcarLeida,
-    marcarVariasLeidas,
+    marcarNoLeida,
     crearAlerta,
     eliminarAlerta,
-    exportarReporte,
     clearError
   } = useAlertas();
 
-  // Estados locales
-  const [vista, setVista] = useState('dashboard'); // 'dashboard' | 'lista'
-  const [filtros, setFiltros] = useState({
-    leida: '',
-    prioridad: '',
-    tipo: '',
-    fecha_desde: '',
-    fecha_hasta: '',
-    buscar: ''
-  });
-  const [selectedAlertas, setSelectedAlertas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showModalForm, setShowModalForm] = useState(false);
-  const [alertaEdit, setAlertaEdit] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
 
-  // Cargar datos iniciales
   useEffect(() => {
-    if (vista === 'lista') {
-      loadAlertas(filtros);
-    }
-  }, [vista, filtros, loadAlertas]);
+    loadAlertas();
+    loadContadores();
+  }, [loadAlertas, loadContadores]);
 
-  // Funciones para filtros
-  const handleFiltrosChange = (nuevosFiltros) => {
-    setFiltros(prev => ({ ...prev, ...nuevosFiltros }));
+  const handleBuscarAlertas = (event) => {
+    event.preventDefault();
+    loadAlertas({ buscar: searchTerm.trim() });
   };
 
-  const limpiarFiltros = () => {
-    setFiltros({
-      leida: '',
-      prioridad: '',
-      tipo: '',
-      fecha_desde: '',
-      fecha_hasta: '',
-      buscar: ''
-    });
+  const handleLimpiarBusqueda = () => {
+    setSearchTerm('');
+    loadAlertas();
+    loadContadores();
   };
 
-  // Funciones para acciones masivas
-  const handleSelectAlerta = (id, checked) => {
-    setSelectedAlertas(prev => 
-      checked 
-        ? [...prev, id]
-        : prev.filter(alertaId => alertaId !== id)
-    );
+  const handleRecargar = () => {
+    loadAlertas({ buscar: searchTerm.trim() || undefined });
+    loadContadores();
   };
 
-  const handleSelectAll = (checked) => {
-    setSelectedAlertas(checked ? alertas.map(a => a.id) : []);
-  };
-
-  const handleMarcarLeidasMasivo = async () => {
-    if (selectedAlertas.length === 0) return;
-    
-    try {
-      await marcarVariasLeidas(selectedAlertas);
-      setSelectedAlertas([]);
-    } catch (error) {
-      console.error('Error al marcar alertas como leídas:', error);
-    }
-  };
-
-  // Funciones CRUD
   const handleCrearAlerta = () => {
-    setAlertaEdit(null);
-    setShowModalForm(true);
-  };
-
-  const handleEditarAlerta = (alerta) => {
-    setAlertaEdit(alerta);
     setShowModalForm(true);
   };
 
   const handleSubmitForm = async (alertaData) => {
     try {
-      if (alertaEdit) {
-        // Aquí iría la función de actualizar
-        console.log('Actualizar alerta:', alertaData);
-      } else {
-        await crearAlerta(alertaData);
-      }
+      await crearAlerta(alertaData);
       setShowModalForm(false);
-      setAlertaEdit(null);
-      
-      // Recargar datos si estamos en vista lista
-      if (vista === 'lista') {
-        loadAlertas(filtros);
-      }
-      loadContadores();
-    } catch (error) {
-      console.error('Error al guardar alerta:', error);
+      handleRecargar();
+    } catch (submitError) {
+      console.error('Error al guardar alerta:', submitError);
     }
   };
 
@@ -129,184 +70,163 @@ const AlertasView = () => {
 
     try {
       await eliminarAlerta(id);
-      setSelectedAlertas(prev => prev.filter(alertaId => alertaId !== id));
-    } catch (error) {
-      console.error('Error al eliminar alerta:', error);
+      handleRecargar();
+    } catch (deleteError) {
+      console.error('Error al eliminar alerta:', deleteError);
     }
   };
 
-  // Función para exportar
-  const handleExportar = async (formato = 'excel') => {
+  const handleToggleLectura = async (alerta) => {
     try {
-      const resultado = await exportarReporte(filtros, formato);
-      
-      // Crear enlace de descarga
-      const url = window.URL.createObjectURL(new Blob([resultado.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', resultado.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error('Error al exportar:', error);
+      if (alerta.leida) {
+        await marcarNoLeida(alerta.id);
+      } else {
+        await marcarLeida(alerta.id);
+      }
+    } catch (toggleError) {
+      console.error('Error al actualizar estado de alerta:', toggleError);
     }
   };
 
   return (
     <div className="container-fluid py-4">
-      {/* Header */}
       <div className="row mb-4">
-        <div className="col-md-6">
-          <h2 className="h3 mb-0">Alertas y Notificaciones</h2>
-          <p className="text-muted">Gestión de alertas del sistema</p>
+        <div className="col-md-7">
+          <h2 className="h3 mb-0">Alertas del sistema</h2>
+          <p className="text-muted mb-0">Revisa los avisos generados automáticamente por la plataforma.</p>
         </div>
-        <div className="col-md-6 text-end">
-          {/* Botones de vista */}
-          <div className="btn-group me-3" role="group">
+        <div className="col-md-5 text-md-end mt-3 mt-md-0">
+          <div className="d-inline-flex gap-2">
             <Button
-              variant={vista === 'dashboard' ? 'primary' : 'outline-primary'}
+              variant="outline-secondary"
               size="sm"
-              onClick={() => setVista('dashboard')}
+              onClick={handleRecargar}
+              disabled={loading}
             >
-              <i className="bi bi-speedometer2 me-1"></i>
-              Dashboard
+              <i className="bi bi-arrow-clockwise me-1"></i>
+              Actualizar
             </Button>
-            <Button
-              variant={vista === 'lista' ? 'primary' : 'outline-primary'}
-              size="sm"
-              onClick={() => setVista('lista')}
-            >
-              <i className="bi bi-list-ul me-1"></i>
-              Lista
-            </Button>
+            {user?.is_gerente && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleCrearAlerta}
+              >
+                <i className="bi bi-plus-lg me-1"></i>
+                Nueva alerta
+              </Button>
+            )}
           </div>
-
-          {/* Botones de acción */}
-          {user?.is_gerente && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleCrearAlerta}
-            >
-              <i className="bi bi-plus-lg me-1"></i>
-              Nueva Alerta
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* Alertas de error */}
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
           <i className="bi bi-exclamation-triangle me-2"></i>
           {error}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={clearError}
-            aria-label="Close"
+            aria-label="Cerrar"
           ></button>
         </div>
       )}
 
-      {/* Contenido principal */}
-      {vista === 'dashboard' ? (
-        <AlertasDashboard contadores={contadores} />
-      ) : (
-        <>
-          {/* Barra de herramientas para lista */}
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <div className="d-flex gap-2">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <i className="bi bi-funnel me-1"></i>
-                  Filtros
-                </Button>
-                
-                {selectedAlertas.length > 0 && (
-                  <>
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={handleMarcarLeidasMasivo}
-                    >
-                      <i className="bi bi-check-all me-1"></i>
-                      Marcar leídas ({selectedAlertas.length})
-                    </Button>
-                  </>
-                )}
+      <div className="card mb-4">
+        <div className="card-body">
+          <form className="row g-2 align-items-center" onSubmit={handleBuscarAlertas}>
+            <div className="col-sm-6 col-md-8">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Buscar por título o mensaje"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
               </div>
             </div>
-            <div className="col-md-6 text-end">
-              <div className="btn-group" role="group">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => handleExportar('excel')}
-                  disabled={loading}
-                >
-                  <i className="bi bi-file-earmark-excel me-1"></i>
-                  Excel
+            <div className="col-sm-6 col-md-4 text-sm-end">
+              <div className="d-inline-flex gap-2">
+                <Button type="submit" variant="primary" size="sm" disabled={loading}>
+                  Buscar
                 </Button>
                 <Button
+                  type="button"
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => handleExportar('pdf')}
-                  disabled={loading}
+                  onClick={handleLimpiarBusqueda}
+                  disabled={!searchTerm || loading}
                 >
-                  <i className="bi bi-file-earmark-pdf me-1"></i>
-                  PDF
+                  Limpiar
                 </Button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {contadores && (
+        <div className="row g-3 mb-3">
+          <div className="col-md-3 col-sm-6">
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <span className="text-muted d-block">Total de alertas</span>
+                <h4 className="mb-0">{contadores.total ?? 0}</h4>
               </div>
             </div>
           </div>
-
-          {/* Filtros */}
-          {showFilters && (
-            <AlertasFilters
-              filtros={filtros}
-              onFiltrosChange={handleFiltrosChange}
-              onLimpiar={limpiarFiltros}
-            />
-          )}
-
-          {/* Lista de alertas */}
-          <AlertasList
-            alertas={alertas}
-            loading={loading}
-            selectedAlertas={selectedAlertas}
-            onSelectAlerta={handleSelectAlerta}
-            onSelectAll={handleSelectAll}
-            onMarcarLeida={marcarLeida}
-            onEditar={handleEditarAlerta}
-            onEliminar={handleEliminarAlerta}
-            canEdit={user?.is_gerente}
-            canDelete={user?.is_gerente}
-          />
-        </>
+          <div className="col-md-3 col-sm-6">
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <span className="text-muted d-block">Sin leer</span>
+                <h4 className="mb-0 text-danger">{contadores.no_leidas ?? 0}</h4>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 col-sm-6">
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <span className="text-muted d-block">Recientes</span>
+                <h4 className="mb-0 text-primary">{contadores.recientes ?? 0}</h4>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 col-sm-6">
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <span className="text-muted d-block">Prioridad alta</span>
+                <h4 className="mb-0 text-warning">{contadores.por_prioridad?.alta ?? 0}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Modal de formulario */}
+      <AlertasList
+        alertas={alertas}
+        loading={loading}
+        onToggleLectura={handleToggleLectura}
+        onEliminar={handleEliminarAlerta}
+        canManage={Boolean(user?.is_gerente)}
+      />
+
       <Modal
         show={showModalForm}
         onHide={() => {
           setShowModalForm(false);
-          setAlertaEdit(null);
         }}
-        title={alertaEdit ? 'Editar Alerta' : 'Nueva Alerta'}
+        title="Nueva alerta"
         size="lg"
       >
         <AlertaForm
-          alerta={alertaEdit}
           onSubmit={handleSubmitForm}
           onCancel={() => {
             setShowModalForm(false);
-            setAlertaEdit(null);
           }}
         />
       </Modal>

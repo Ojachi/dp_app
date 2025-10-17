@@ -1,11 +1,11 @@
 import React from 'react';
 
-const CarteraDashboard = ({ 
-  resumen, 
-  cuentasPorCobrar, 
-  estadisticasMora, 
-  metricas, 
-  loading 
+const CarteraDashboard = ({
+  resumen,
+  cuentasPorCobrar,
+  estadisticasMora,
+  metricas,
+  loading
 }) => {
   if (loading) {
     return (
@@ -24,6 +24,12 @@ const CarteraDashboard = ({
       minimumFractionDigits: 0
     }).format(value || 0);
   };
+
+  const principalesCuentas = Array.isArray(cuentasPorCobrar)
+    ? [...cuentasPorCobrar].sort((a, b) => (b.totalDeuda || 0) - (a.totalDeuda || 0)).slice(0, 5)
+    : [];
+
+  const porcentajeMora = Number(resumen?.porcentajeMora ?? 0);
 
   return (
     <div className="row">
@@ -73,7 +79,7 @@ const CarteraDashboard = ({
                     <h6 className="card-title mb-1">En Mora</h6>
                     <h3 className="mb-0">{metricas?.cuentasEnMora || 0}</h3>
                     <small className="opacity-75">
-                      {resumen?.porcentajeMora}% del total
+                      {porcentajeMora.toFixed(1)}% del total
                     </small>
                   </div>
                   <div className="opacity-75">
@@ -126,8 +132,8 @@ const CarteraDashboard = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {cuentasPorCobrar?.slice(0, 5).map((cuenta, index) => (
-                    <tr key={cuenta.id}>
+                  {principalesCuentas.map((cuenta) => (
+                    <tr key={cuenta.id || cuenta.cliente}>
                       <td>
                         <div>
                           <div className="fw-semibold">{cuenta.cliente}</div>

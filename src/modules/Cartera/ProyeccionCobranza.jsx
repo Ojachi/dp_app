@@ -9,6 +9,31 @@ const ProyeccionCobranza = ({ proyeccionCobranza, loading }) => {
     }).format(value || 0);
   };
 
+  const formatMonth = (value) => {
+    if (!value) {
+      return 'Sin fecha';
+    }
+
+    if (value.length === 7) {
+      const [year, month] = value.split('-');
+      const date = new Date(Number(year), Number(month) - 1, 1);
+      return new Intl.DateTimeFormat('es-CO', {
+        year: 'numeric',
+        month: 'long'
+      }).format(date);
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat('es-CO', {
+      year: 'numeric',
+      month: 'long'
+    }).format(date);
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center py-4">
@@ -19,7 +44,7 @@ const ProyeccionCobranza = ({ proyeccionCobranza, loading }) => {
     );
   }
 
-  const totalProyectado = proyeccionCobranza?.reduce((sum, proj) => sum + proj.estimado, 0) || 0;
+  const totalProyectado = proyeccionCobranza?.reduce((sum, proj) => sum + (proj.estimado || 0), 0) || 0;
   const promedioProb = proyeccionCobranza?.length > 0 
     ? proyeccionCobranza.reduce((sum, proj) => sum + proj.probabilidad, 0) / proyeccionCobranza.length 
     : 0;
@@ -70,8 +95,11 @@ const ProyeccionCobranza = ({ proyeccionCobranza, loading }) => {
           <div className="card-body">
             <div className="row">
               {proyeccionCobranza?.map((proyeccion, index) => {
-                const maxMonto = Math.max(...proyeccionCobranza.map(p => p.estimado));
-                const porcentajeAltura = (proyeccion.estimado / maxMonto) * 100;
+                const maxMonto = proyeccionCobranza.length > 0
+                  ? Math.max(...proyeccionCobranza.map((item) => item.estimado || 0))
+                  : 0;
+                const safeMax = maxMonto > 0 ? maxMonto : 1;
+                const porcentajeAltura = ((proyeccion.estimado || 0) / safeMax) * 100;
                 
                 // Color basado en probabilidad
                 let colorClass = 'success';
@@ -106,7 +134,7 @@ const ProyeccionCobranza = ({ proyeccionCobranza, loading }) => {
                       
                       {/* Información del mes */}
                       <div>
-                        <div className="fw-semibold mb-1">{proyeccion.mes}</div>
+                        <div className="fw-semibold mb-1 text-capitalize">{formatMonth(proyeccion.mes)}</div>
                         <div className="small text-muted mb-1">
                           Probabilidad: {proyeccion.probabilidad}%
                         </div>
@@ -169,7 +197,7 @@ const ProyeccionCobranza = ({ proyeccionCobranza, loading }) => {
               return (
                 <div key={index} className="border rounded p-3 mb-3">
                   <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div className="fw-semibold">{proyeccion.mes}</div>
+                    <div className="fw-semibold text-capitalize">{formatMonth(proyeccion.mes)}</div>
                     <span className={`badge bg-${colorClass}`}>
                       <i className={`${iconClass} me-1`}></i>
                       {proyeccion.probabilidad}%

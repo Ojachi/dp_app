@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { alertasService } from '../services/alertasService';
 
-export const useAlertas = () => {
+export const useAlertas = (options = {}) => {
+  const { autoLoad = true } = options;
   const [alertas, setAlertas] = useState([]);
   const [contadores, setContadores] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -210,8 +211,10 @@ export const useAlertas = () => {
 
   // Efecto para cargar contadores al inicializar
   useEffect(() => {
-    loadContadores();
-  }, [loadContadores]);
+    if (autoLoad) {
+      loadContadores();
+    }
+  }, [autoLoad, loadContadores]);
 
   return {
     // Estado

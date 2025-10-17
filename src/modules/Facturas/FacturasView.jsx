@@ -227,16 +227,35 @@ const FacturasView = () => {
              'Administra las facturas del sistema'}
           </p>
         </div>
-        
-        {view !== 'list' && (
-          <button
-            className="btn btn-outline-secondary"
-            onClick={() => handleViewChange('list')}
-          >
-            <i className="fas fa-arrow-left me-2"></i>
-            Volver a la lista
-          </button>
-        )}
+        <div className="d-flex gap-2">
+          {view === 'list' && isGerente() && (
+            <>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleCreateFactura()}
+              >
+                <i className="fas fa-plus me-2"></i>
+                Agregar Factura
+              </button>
+              <button
+                className="btn btn-outline-primary"
+                onClick={() => navigate('/importacion')}
+              >
+                <i className="fas fa-file-import me-2"></i>
+                Importar
+              </button>
+            </>
+          )}
+          {view !== 'list' && (
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => handleViewChange('list')}
+            >
+              <i className="fas fa-arrow-left me-2"></i>
+              Volver a la lista
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Contenido principal */}

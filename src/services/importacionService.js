@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from './api';
 
 // Datos de ejemplo para importación
 const sampleImportData = {
@@ -97,7 +97,7 @@ const templateColumns = [
   'subtotal',
   'impuestos',
   'total',
-  'metodo_pago',
+  'tipo_pago',
   'observaciones'
 ];
 
@@ -187,7 +187,7 @@ class ImportacionService {
           subtotal: '150000',
           impuestos: '28500',
           total: '178500',
-          metodo_pago: 'Crédito',
+          tipo_pago: 'Crédito',
           observaciones: 'Factura mensual'
         },
         {
@@ -200,7 +200,7 @@ class ImportacionService {
           subtotal: '250000',
           impuestos: '47500',
           total: '297500',
-          metodo_pago: 'Efectivo',
+          tipo_pago: 'Efectivo',
           observaciones: ''
         },
         {
@@ -213,7 +213,7 @@ class ImportacionService {
           subtotal: '480000',
           impuestos: '91200',
           total: '571200',
-          metodo_pago: 'Transferencia',
+          tipo_pago: 'Transferencia',
           observaciones: 'Pedido especial'
         }
       ];
@@ -373,7 +373,7 @@ class ImportacionService {
       // Crear contenido CSV simulado
       const csvContent = [
         templateColumns.join(','),
-        'FAC-2024-XXXX,DD/MM/AAAA,DD/MM/AAAA,CLI-XXX,Nombre Cliente,RUC,0,0,0,Crédito,Observaciones'
+  'FAC-2024-XXXX,DD/MM/AAAA,DD/MM/AAAA,CLI-XXX,Nombre Cliente,RUC,0,0,0,Crédito,Observaciones'
       ].join('\n');
       
       return new Blob([csvContent], { 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useToast } from '../../components/Toast';
 import SearchBar from '../../components/SearchBar';
 import FiltersSidebar from '../../components/FiltersSidebar';
 import Table from '../../components/Table';
@@ -15,8 +16,35 @@ const CuentasPorCobrar = ({
   onVerDetalle,
   enviarEstadoCuenta
 }) => {
+  const { toast } = useToast();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCuentas, setSelectedCuentas] = useState([]);
+
+  const paginatedData = useMemo(() => {
+    if (!Array.isArray(cuentasPorCobrar) || cuentasPorCobrar.length === 0) {
+      return [];
+    }
+    const { page = 1, limit = cuentasPorCobrar.length } = pagination || {};
+    const startIndex = (page - 1) * limit;
+    return cuentasPorCobrar.slice(startIndex, startIndex + limit);
+  }, [cuentasPorCobrar, pagination]);
+
+  const allVisibleSelected =
+    paginatedData.length > 0 && paginatedData.every((cuenta) => selectedCuentas.includes(cuenta.id));
+
+  useEffect(() => {
+    if (!Array.isArray(cuentasPorCobrar) || cuentasPorCobrar.length === 0) {
+      if (selectedCuentas.length > 0) {
+        setSelectedCuentas([]);
+      }
+      return;
+    }
+
+    setSelectedCuentas((prev) => {
+      const filtered = prev.filter((id) => cuentasPorCobrar.some((cuenta) => cuenta.id === id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [cuentasPorCobrar, selectedCuentas.length]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-CO', {
@@ -43,7 +71,7 @@ const CuentasPorCobrar = ({
   };
 
   const handleSelectAll = (checked) => {
-    setSelectedCuentas(checked ? cuentasPorCobrar.map(c => c.id) : []);
+    setSelectedCuentas(checked ? paginatedData.map((cuenta) => cuenta.id) : []);
   };
 
   const handleEnviarEstados = async () => {
@@ -51,10 +79,10 @@ const CuentasPorCobrar = ({
       for (const cuentaId of selectedCuentas) {
         await enviarEstadoCuenta(cuentaId);
       }
-      alert('Estados de cuenta enviados exitosamente');
+      toast.success('Estados de cuenta enviados exitosamente');
       setSelectedCuentas([]);
     } catch (error) {
-      alert('Error al enviar estados de cuenta: ' + error.message);
+      toast.error('Error al enviar estados de cuenta: ' + (error.message || 'Ocurrió un error'));
     }
   };
 
@@ -65,8 +93,8 @@ const CuentasPorCobrar = ({
       type: 'select',
       options: [
         { value: '', label: 'Todos los estados' },
-        { value: 'Al día', label: 'Al día' },
-        { value: 'En mora', label: 'En mora' }
+        { value: 'aldia', label: 'Al día' },
+        { value: 'vencida', label: 'En mora' }
       ],
       value: filtros.estado
     },
@@ -93,7 +121,7 @@ const CuentasPorCobrar = ({
         <input
           type="checkbox"
           className="form-check-input"
-          checked={selectedCuentas.length === cuentasPorCobrar.length && cuentasPorCobrar.length > 0}
+          checked={allVisibleSelected}
           onChange={(e) => handleSelectAll(e.target.checked)}
         />
       ),
@@ -275,7 +303,7 @@ const CuentasPorCobrar = ({
               </div>
               <div className="col-md-4 text-end">
                 <span className="text-muted">
-                  {cuentasPorCobrar?.length || 0} cuentas encontradas
+                  {pagination.total || cuentasPorCobrar?.length || 0} cuentas encontradas
                 </span>
               </div>
             </div>
@@ -333,7 +361,7 @@ const CuentasPorCobrar = ({
             {/* Tabla */}
             <Table
               columns={columns}
-              data={cuentasPorCobrar}
+              data={paginatedData}
               loading={loading}
               emptyMessage="No se encontraron cuentas por cobrar"
             />

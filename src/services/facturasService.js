@@ -7,15 +7,40 @@ export const facturasService = {
   // Obtener todas las facturas (filtradas por rol)
   async getFacturas(filters = {}) {
     try {
-      const params = new URLSearchParams();
-      
+      const params = {};
+      const map = {
+        // soportar nombres del UI -> API
+        numero_factura: 'search',
+        cliente: 'cliente',
+        vendedor: 'vendedor',
+        distribuidor: 'distribuidor',
+        estado: 'estado',
+        fecha_desde: 'fecha_desde',
+        fecha_hasta: 'fecha_hasta',
+        fecha_venc_desde: 'fecha_vencimiento__gte',
+        fecha_venc_hasta: 'fecha_vencimiento__lte',
+        valor_min: 'valor_total__gte',
+        valor_max: 'valor_total__lte',
+        // filtro rápido
+        vencidas: 'vencidas',
+        ordering: 'ordering',
+        page: 'page',
+        page_size: 'page_size',
+      };
+
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
-          params.append(key, value);
+          const apiKey = map[key] || key;
+          // normalizar booleano de vencidas
+          if (apiKey === 'vencidas') {
+            params[apiKey] = String(Boolean(value));
+          } else {
+            params[apiKey] = value;
+          }
         }
       });
 
-      const response = await apiClient.get(`/facturas/?${params.toString()}`);
+      const response = await apiClient.get('/facturas/', { params });
       return response.data;
     } catch (error) {
       throw new Error('Error al obtener facturas');

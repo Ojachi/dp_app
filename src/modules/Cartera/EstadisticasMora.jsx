@@ -1,6 +1,6 @@
 import React from 'react';
 
-const EstadisticasMora = ({ estadisticasMora, loading }) => {
+const EstadisticasMora = ({ estadisticasMora, totalCartera = 0, loading }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -19,8 +19,11 @@ const EstadisticasMora = ({ estadisticasMora, loading }) => {
     );
   }
 
-  const totalMonto = estadisticasMora?.reduce((sum, stat) => sum + stat.monto, 0) || 0;
-  const totalCantidad = estadisticasMora?.reduce((sum, stat) => sum + stat.cantidad, 0) || 0;
+  const totalMonto = estadisticasMora?.reduce((sum, stat) => sum + (stat.monto || 0), 0) || 0;
+  const totalCantidad = estadisticasMora?.reduce((sum, stat) => sum + (stat.cantidad || 0), 0) || 0;
+  const porcentajeSobreTotal = totalCartera > 0
+    ? ((totalMonto / totalCartera) * 100).toFixed(1)
+    : '0.0';
 
   return (
     <div className="row">
@@ -48,9 +51,7 @@ const EstadisticasMora = ({ estadisticasMora, loading }) => {
                 </div>
               </div>
               <div className="col-md-4">
-                <h3 className="text-info">
-                  {totalMonto > 0 ? ((totalMonto / 2450000) * 100).toFixed(1) : 0}%
-                </h3>
+                <h3 className="text-info">{porcentajeSobreTotal}%</h3>
                 <small className="text-muted">% del Total de Cartera</small>
               </div>
             </div>
