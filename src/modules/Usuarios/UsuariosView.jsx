@@ -21,13 +21,13 @@ const UsuariosView = () => {
     loading,
     error,
     loadUsuarios,
-    loadEstadisticas,
+    //loadEstadisticas,
     crearUsuario,
     actualizarUsuario,
     eliminarUsuario,
     toggleUsuarioStatus,
     resetearPassword,
-    exportarUsuarios,
+    //exportarUsuarios,
     clearError
   } = useUsuarios();
 
@@ -104,7 +104,7 @@ const UsuariosView = () => {
       if (vista === 'lista') {
         loadUsuarios(filtros);
       }
-      loadEstadisticas();
+      //loadEstadisticas();
     } catch (error) {
       console.error('Error al guardar usuario:', error);
     }
@@ -154,22 +154,22 @@ const UsuariosView = () => {
   };
 
   // Función para exportar
-  const handleExportar = async (formato = 'excel') => {
-    try {
-      const resultado = await exportarUsuarios(filtros, formato);
+  // const handleExportar = async (formato = 'excel') => {
+  //   try {
+  //     const resultado = await exportarUsuarios(filtros, formato);
       
-      // Crear enlace de descarga
-      const url = window.URL.createObjectURL(new Blob([resultado.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', resultado.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error('Error al exportar:', error);
-    }
-  };
+  //     // Crear enlace de descarga
+  //     const url = window.URL.createObjectURL(new Blob([resultado.data]));
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.setAttribute('download', resultado.filename);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //   } catch (error) {
+  //     console.error('Error al exportar:', error);
+  //   }
+  // };
 
   // Verificar permisos (solo gerentes pueden acceder)
   if (!user?.is_gerente) {

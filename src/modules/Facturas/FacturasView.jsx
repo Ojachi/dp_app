@@ -10,6 +10,7 @@ import { facturasService } from '../../services/facturasService';
 import FacturasTable from './components/FacturasTable';
 import FacturasFilters from './components/FacturasFilters';
 import FacturaForm from './components/FacturaForm';
+import { entidadesService } from '../../services/entidadesService';
 import FacturaDetail from './components/FacturaDetail';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
@@ -25,6 +26,38 @@ const FacturasView = () => {
   const [selectedFactura, setSelectedFactura] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState(null);
+  const [entidades, setEntidades] = useState({ clientes: [], vendedores: [], distribuidores: [] });
+
+  // Cargar entidades de apoyo (clientes, vendedores, distribuidores)
+  const loadEntidades = async () => {
+    try {
+      const [clientes, vendedores, distribuidores] = await Promise.all([
+        entidadesService.clientes.getAll(),
+        entidadesService.vendedores.getAll(),
+        entidadesService.distribuidores.getAll(),
+      ]);
+      const toArray = (data) => {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.results)) return data.results;
+        return [];
+      };
+      setEntidades({
+        clientes: toArray(clientes),
+        vendedores: toArray(vendedores),
+        distribuidores: toArray(distribuidores)
+      });
+    } catch (e) {
+      console.error('Error cargando entidades:', e);
+    }
+  };
+
+  useEffect(() => {
+    // Pre-cargar entidades para filtros y formularios
+    loadEntidades();
+  }, []);
+
+  const openFacturaModal = (mode) => setView(mode); // 'create' | 'edit'
+  const closeFacturaModal = () => setView('list');
 
   // Hook para manejo de facturas
   const {
@@ -75,23 +108,25 @@ const FacturasView = () => {
   };
 
   // Crear nueva factura
-  const handleCreateFactura = () => {
+  const handleCreateFactura = async () => {
     if (!isGerente()) {
       showNotification('No tienes permisos para crear facturas', 'error');
       return;
     }
-    setView('create');
     setSelectedFactura(null);
+    await loadEntidades();
+    openFacturaModal('create');
   };
 
   // Editar factura
-  const handleEditFactura = (factura) => {
+  const handleEditFactura = async (factura) => {
     if (!isGerente()) {
       showNotification('No tienes permisos para editar facturas', 'error');
       return;
     }
-    setView('edit');
     setSelectedFactura(factura);
+    await loadEntidades();
+    openFacturaModal('edit');
   };
 
   // Eliminar factura
@@ -123,19 +158,26 @@ const FacturasView = () => {
     const isEdit = view === 'edit' && selectedFactura;
     
     await execute(
-      () => {
+      async () => {
+        const payload = { ...facturaData };
+        // Si viene un cliente nuevo desde el formulario, crearlo primero
+        if (payload.cliente_nuevo) {
+          const nuevo = await entidadesService.clientes.create(payload.cliente_nuevo);
+          payload.cliente_id = nuevo.id;
+          delete payload.cliente_nuevo;
+        }
+
         if (isEdit) {
-          return facturasService.updateFactura(selectedFactura.id, facturaData);
+          return facturasService.updateFactura(selectedFactura.id, payload);
         } else {
-          return facturasService.createFactura(facturaData);
+          return facturasService.createFactura(payload);
         }
       },
       (data) => {
         const message = isEdit ? 'Factura actualizada correctamente' : 'Factura creada correctamente';
         showNotification(message, 'success');
         refreshFacturas();
-        setView('list');
-        navigate('/facturas');
+        closeFacturaModal();
       }
     );
   };
@@ -160,23 +202,16 @@ const FacturasView = () => {
     switch (view) {
       case 'create':
       case 'edit':
-        return (
-          <FacturaForm
-            factura={selectedFactura}
-            onSave={handleSaveFactura}
-            onCancel={() => handleViewChange('list')}
-            loading={apiLoading}
-            isEdit={view === 'edit'}
-          />
-        );
-      
+        // En modalidad modal, caemos al default (lista) y mostramos el modal aparte
+        return null;
+
       case 'detail':
         return (
           <FacturaDetail
             factura={selectedFactura}
             onEdit={() => handleEditFactura(selectedFactura)}
             onDelete={() => handleDeleteFactura(selectedFactura)}
-            onBack={() => handleViewChange('list')}
+            onClose={() => handleViewChange('list')}
             loading={apiLoading}
           />
         );
@@ -189,6 +224,7 @@ const FacturasView = () => {
               filters={filters}
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}
+              entidades={entidades}
               onCreateFactura={handleCreateFactura}
               canCreate={isGerente()}
             />
@@ -284,6 +320,26 @@ const FacturasView = () => {
             </button>
           </div>
         )}
+      </Modal>
+
+      {/* Modal para crear/editar factura */}
+      <Modal
+        show={view === 'create' || view === 'edit'}
+        onHide={() => handleViewChange('list')}
+        title={view === 'edit' ? 'Editar Factura' : 'Nueva Factura'}
+        size="xl"
+        bodyClassName="p-0"
+      >
+        <div className="p-3">
+          <FacturaForm
+            factura={selectedFactura}
+            entidades={entidades}
+            onSave={handleSaveFactura}
+            onCancel={() => handleViewChange('list')}
+            loading={apiLoading}
+            isEdit={view === 'edit'}
+          />
+        </div>
       </Modal>
     </div>
   );

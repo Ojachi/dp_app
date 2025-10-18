@@ -8,12 +8,11 @@ import { Select } from '../../../components/Select';
 import { DatePicker } from '../../../components/DatePicker';
 import { Button } from '../../../components/Button';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { formatCurrency } from '../../../utils/formatters';
 
 const FacturaForm = ({
   factura = null,
   entidades = {},
-  onSubmit,
+  onSave,
   onCancel,
   loading = false,
   errors = {}
@@ -24,19 +23,15 @@ const FacturaForm = ({
     cliente_id: '',
     vendedor_id: '',
     distribuidor_id: '',
+    tipo: 'FE',
     fecha_emision: '',
     fecha_vencimiento: '',
     valor_total: '',
     observaciones: '',
     productos: []
   });
-
-  const [producto, setProducto] = useState({
-    nombre: '',
-    cantidad: 1,
-    valor_unitario: '',
-    valor_total: 0
-  });
+  
+  // Productos/Servicios ya no se manejan en este MVP
 
   const [clienteNuevo, setClienteNuevo] = useState({
     nombre: '',
@@ -46,20 +41,21 @@ const FacturaForm = ({
   });
 
   const [mostrarClienteForm, setMostrarClienteForm] = useState(false);
-  const [calculoAutomatico, setCalculoAutomatico] = useState(true);
+  // Cálculo automático eliminado: valor_total lo ingresa el usuario
 
   useEffect(() => {
     if (factura) {
       setFormData({
         numero_factura: factura.numero_factura || '',
-        cliente_id: factura.cliente_id || '',
-        vendedor_id: factura.vendedor_id || '',
-        distribuidor_id: factura.distribuidor_id || '',
+        cliente_id: factura.cliente || factura.cliente?.id || '',
+        vendedor_id: factura.vendedor || factura.vendedor?.id || '',
+        distribuidor_id: factura.distribuidor || factura.distribuidor?.id || '',
+        tipo: factura.tipo || 'FE',
         fecha_emision: factura.fecha_emision || '',
         fecha_vencimiento: factura.fecha_vencimiento || '',
         valor_total: factura.valor_total || '',
         observaciones: factura.observaciones || '',
-        productos: factura.productos || []
+        productos: [] 
       });
     } else {
       // Valores por defecto para nueva factura
@@ -82,119 +78,70 @@ const FacturaForm = ({
     }));
   };
 
-  const handleProductoChange = (name, value) => {
-    const updatedProducto = {
-      ...producto,
-      [name]: value
-    };
-
-    // Calcular valor total del producto automáticamente
-    if (name === 'cantidad' || name === 'valor_unitario') {
-      const cantidad = name === 'cantidad' ? parseFloat(value) || 0 : parseFloat(producto.cantidad) || 0;
-      const valorUnitario = name === 'valor_unitario' ? parseFloat(value) || 0 : parseFloat(producto.valor_unitario) || 0;
-      updatedProducto.valor_total = cantidad * valorUnitario;
-    }
-
-    setProducto(updatedProducto);
-  };
-
-  const agregarProducto = () => {
-    if (!producto.nombre || !producto.cantidad || !producto.valor_unitario) {
-      toast.warning('Por favor complete todos los campos del producto');
-      return;
-    }
-
-    const nuevoProducto = {
-      ...producto,
-      id: Date.now() // ID temporal para el frontend
-    };
-
-    const productosActualizados = [...formData.productos, nuevoProducto];
-    setFormData(prev => ({
-      ...prev,
-      productos: productosActualizados
-    }));
-
-    // Calcular valor total automáticamente
-    if (calculoAutomatico) {
-      const valorTotal = productosActualizados.reduce((sum, p) => sum + p.valor_total, 0);
-      setFormData(prev => ({
-        ...prev,
-        valor_total: valorTotal
-      }));
-    }
-
-    // Limpiar formulario de producto
-    setProducto({
-      nombre: '',
-      cantidad: 1,
-      valor_unitario: '',
-      valor_total: 0
-    });
-  };
-
-  const eliminarProducto = (productoId) => {
-    const productosActualizados = formData.productos.filter(p => p.id !== productoId);
-    setFormData(prev => ({
-      ...prev,
-      productos: productosActualizados
-    }));
-
-    // Recalcular valor total
-    if (calculoAutomatico) {
-      const valorTotal = productosActualizados.reduce((sum, p) => sum + p.valor_total, 0);
-      setFormData(prev => ({
-        ...prev,
-        valor_total: valorTotal
-      }));
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validaciones básicas
-    if (!formData.numero_factura || !formData.cliente_id || !formData.valor_total) {
+    if (!formData.numero_factura || !formData.valor_total) {
       toast.warning('Por favor complete los campos requeridos');
       return;
     }
+    // Validación de cliente: permitir cliente nuevo
+    if (!mostrarClienteForm && !formData.cliente_id) {
+      toast.warning('Seleccione un cliente o cree uno nuevo');
+      return;
+    }
+    if (mostrarClienteForm && !clienteNuevo.nombre) {
+      toast.warning('Ingrese el nombre del nuevo cliente');
+      return;
+    }
 
+    const toInt = (v) => (v === '' || v === null || v === undefined ? null : parseInt(v, 10));
     const dataToSubmit = {
-      ...formData,
-      valor_total: parseFloat(formData.valor_total)
+      numero_factura: formData.numero_factura,
+      cliente_id: toInt(formData.cliente_id),
+      vendedor_id: toInt(formData.vendedor_id),
+      distribuidor_id: toInt(formData.distribuidor_id),
+      tipo: formData.tipo,
+      fecha_emision: formData.fecha_emision,
+      fecha_vencimiento: formData.fecha_vencimiento,
+      valor_total: parseFloat(formData.valor_total),
+      observaciones: formData.observaciones || ''
     };
 
-    // Si se está creando un cliente nuevo
-    if (mostrarClienteForm && clienteNuevo.nombre) {
+    // Adjuntar datos de nuevo cliente si aplica
+    if (mostrarClienteForm) {
       dataToSubmit.cliente_nuevo = clienteNuevo;
       dataToSubmit.cliente_id = null;
     }
 
-    onSubmit(dataToSubmit);
+    onSave(dataToSubmit);
   };
+
+  const asArray = (data) => (Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : []));
 
   const clientesOptions = [
     { value: '', label: 'Seleccionar cliente...' },
     { value: 'nuevo', label: '+ Crear nuevo cliente' },
-    ...(entidades?.clientes || []).map(cliente => ({
-      value: cliente.id,
+    ...asArray(entidades?.clientes).map(cliente => ({
+      value: String(cliente.id),
       label: `${cliente.nombre} - ${cliente.telefono || 'Sin teléfono'}`
     }))
   ];
 
   const vendedoresOptions = [
     { value: '', label: 'Seleccionar vendedor...' },
-    ...(entidades?.vendedores || []).map(vendedor => ({
-      value: vendedor.id,
-      label: vendedor.nombre
+    ...asArray(entidades?.vendedores).map(vendedor => ({
+      value: String(vendedor.usuario?.id ?? vendedor.id),
+      label: vendedor.usuario?.full_name ?? vendedor.nombre ?? vendedor.usuario_nombre ?? 'Vendedor'
     }))
   ];
 
   const distribuidoresOptions = [
     { value: '', label: 'Seleccionar distribuidor...' },
-    ...(entidades?.distribuidores || []).map(distribuidor => ({
-      value: distribuidor.id,
-      label: distribuidor.nombre
+    ...asArray(entidades?.distribuidores).map(distribuidor => ({
+      value: String(distribuidor.usuario?.id ?? distribuidor.id),
+      label: distribuidor.usuario?.full_name ?? distribuidor.nombre ?? distribuidor.usuario_nombre ?? 'Distribuidor'
     }))
   ];
 
@@ -261,6 +208,7 @@ const FacturaForm = ({
             }
           }}
           options={clientesOptions}
+          placeholder={null}
           error={errors.cliente_id}
           required
           disabled={loading}
@@ -328,6 +276,7 @@ const FacturaForm = ({
           value={formData.vendedor_id}
           onChange={(value) => handleInputChange('vendedor_id', value)}
           options={vendedoresOptions}
+          placeholder={null}
           error={errors.vendedor_id}
           disabled={loading}
         />
@@ -339,148 +288,41 @@ const FacturaForm = ({
           value={formData.distribuidor_id}
           onChange={(value) => handleInputChange('distribuidor_id', value)}
           options={distribuidoresOptions}
+          placeholder={null}
           error={errors.distribuidor_id}
           disabled={loading}
         />
       </div>
 
-      {/* Productos */}
-      <div className="col-12 mt-4">
-        <h5 className="border-bottom pb-2 mb-3">
-          <i className="fas fa-boxes me-2"></i>
-          Productos/Servicios
-        </h5>
+      {/* Selección de tipo de factura */}
+      <div className="col-md-3">
+        <Select
+          label="Tipo *"
+          value={formData.tipo}
+          onChange={(value) => handleInputChange('tipo', value)}
+          options={[
+            { value: 'FE', label: 'Factura electrónica (FE)' },
+            { value: 'R', label: 'Remisión (R)' }
+          ]}
+          placeholder={null}
+          required
+          disabled={loading}
+        />
       </div>
-
-      {/* Formulario para agregar producto */}
-      <div className="col-12">
-        <div className="card">
-          <div className="card-body">
-            <h6 className="card-title">Agregar Producto/Servicio</h6>
-            <div className="row g-2">
-              <div className="col-md-4">
-                <Input
-                  label="Nombre del producto"
-                  type="text"
-                  value={producto.nombre}
-                  onChange={(value) => handleProductoChange('nombre', value)}
-                  placeholder="Ej: Producto ABC"
-                  disabled={loading}
-                />
-              </div>
-              <div className="col-md-2">
-                <Input
-                  label="Cantidad"
-                  type="number"
-                  value={producto.cantidad}
-                  onChange={(value) => handleProductoChange('cantidad', value)}
-                  min="0.01"
-                  step="0.01"
-                  disabled={loading}
-                />
-              </div>
-              <div className="col-md-2">
-                <Input
-                  label="Valor Unitario"
-                  type="number"
-                  value={producto.valor_unitario}
-                  onChange={(value) => handleProductoChange('valor_unitario', value)}
-                  min="0.01"
-                  step="0.01"
-                  placeholder="0.00"
-                  disabled={loading}
-                />
-              </div>
-              <div className="col-md-2">
-                <label className="form-label">Valor Total</label>
-                <div className="form-control bg-light">
-                  {formatCurrency(producto.valor_total)}
-                </div>
-              </div>
-              <div className="col-md-2 d-flex align-items-end">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={agregarProducto}
-                  disabled={loading}
-                  className="w-100"
-                >
-                  <i className="fas fa-plus me-1"></i>
-                  Agregar
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de productos agregados */}
-      {formData.productos.length > 0 && (
-        <div className="col-12">
-          <div className="table-responsive">
-            <table className="table table-sm">
-              <thead className="bg-light">
-                <tr>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Valor Unitario</th>
-                  <th>Valor Total</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {formData.productos.map((prod) => (
-                  <tr key={prod.id}>
-                    <td>{prod.nombre}</td>
-                    <td>{prod.cantidad}</td>
-                    <td>{formatCurrency(prod.valor_unitario)}</td>
-                    <td>{formatCurrency(prod.valor_total)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={() => eliminarProducto(prod.id)}
-                        disabled={loading}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Valor total */}
       <div className="col-md-6">
-        <div className="d-flex align-items-center mb-2">
-          <Input
-            label="Valor Total *"
-            type="number"
-            value={formData.valor_total}
-            onChange={(value) => handleInputChange('valor_total', value)}
-            min="0.01"
-            step="0.01"
-            error={errors.valor_total}
-            required
-            disabled={loading || calculoAutomatico}
-          />
-          <div className="form-check ms-3">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="calculoAutomatico"
-              checked={calculoAutomatico}
-              onChange={(e) => setCalculoAutomatico(e.target.checked)}
-              disabled={loading}
-            />
-            <label className="form-check-label" htmlFor="calculoAutomatico">
-              Cálculo automático
-            </label>
-          </div>
-        </div>
+        <Input
+          label="Valor Total *"
+          type="number"
+          value={formData.valor_total}
+          onChange={(value) => handleInputChange('valor_total', value)}
+          min="0.01"
+          step="0.01"
+          error={errors.valor_total}
+          required
+          disabled={loading}
+        />
       </div>
 
       <div className="col-12">

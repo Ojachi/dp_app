@@ -61,14 +61,29 @@ const PagosTable = ({
     },
     {
       key: 'valor',
-      header: 'Valor pagado',
-      render: (pago) => (
-        <div className="text-end">
-          <span className="fw-bold text-success">
-            {formatCurrency(pago.valor_pagado || pago.monto || 0)}
-          </span>
-        </div>
-      )
+      header: 'Aplicado',
+      render: (pago) => {
+        const valor = Number(pago.valor_pagado || pago.monto || 0);
+        const descuento = Number(pago.descuento || 0);
+        const retencion = Number(pago.retencion || 0);
+        const ica = Number(pago.ica || 0);
+        const nota = Number(pago.nota || 0);
+        const totalAplicado = valor + descuento + retencion + ica + nota;
+        return (
+          <div className="text-end">
+            <div className="fw-bold text-success">{formatCurrency(totalAplicado)}</div>
+            {(descuento || retencion || ica || nota) ? (
+              <small className="text-muted d-block">
+                {valor ? `Pago ${formatCurrency(valor)}` : ''}
+                {descuento ? `, Desc. ${formatCurrency(descuento)}` : ''}
+                {retencion ? `, Ret. ${formatCurrency(retencion)}` : ''}
+                {ica ? `, ICA ${formatCurrency(ica)}` : ''}
+                {nota ? `, Nota ${formatCurrency(nota)}` : ''}
+              </small>
+            ) : null}
+          </div>
+        );
+      }
     },
     {
       key: 'tipo_pago',

@@ -33,6 +33,11 @@ const AppRoutes = () => {
       roles: null,
     },
     {
+      path: '/facturas/:id',
+      element: <FacturasView />,
+      roles: null,
+    },
+    {
       path: '/pagos',
       element: <PagosView />,
       roles: null,

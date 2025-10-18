@@ -173,15 +173,15 @@ const PagosView = () => {
   };
 
   // Exportar reporte
-  const handleExportReport = async (formato) => {
-    try {
-      await pagosService.exportarReporte(filters, formato);
-      toast.success('Exportación iniciada');
-    } catch (error) {
-      console.error('Error al exportar reporte:', error);
-      toast.error('Error al exportar el reporte: ' + (error.message || 'Ocurrió un error'));
-    }
-  };
+  // const handleExportReport = async (formato) => {
+  //   try {
+  //     await pagosService.exportarReporte(filters, formato);
+  //     toast.success('Exportación iniciada');
+  //   } catch (error) {
+  //     console.error('Error al exportar reporte:', error);
+  //     toast.error('Error al exportar el reporte: ' + (error.message || 'Ocurrió un error'));
+  //   }
+  // };
 
   return (
     <div className="container-fluid">
@@ -207,7 +207,7 @@ const PagosView = () => {
                   Registrar Pago
                 </Button>
               )}
-              <div className="dropdown">
+              {/* <div className="dropdown">
                 <button
                   className="btn btn-outline-secondary dropdown-toggle"
                   type="button"
@@ -236,7 +236,7 @@ const PagosView = () => {
                     </button>
                   </li>
                 </ul>
-              </div>
+              </div> */}
             </div>
           </div>
 

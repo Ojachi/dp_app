@@ -49,9 +49,9 @@ const AlertasView = () => {
     loadContadores();
   };
 
-  const handleCrearAlerta = () => {
-    setShowModalForm(true);
-  };
+  // const handleCrearAlerta = () => {
+  //   setShowModalForm(true);
+  // };
 
   const handleSubmitForm = async (alertaData) => {
     try {
@@ -103,10 +103,10 @@ const AlertasView = () => {
               onClick={handleRecargar}
               disabled={loading}
             >
-              <i className="bi bi-arrow-clockwise me-1"></i>
+              <i className="fas fa-refresh " ></i>
               Actualizar
             </Button>
-            {user?.is_gerente && (
+            {/* {user?.is_gerente && (
               <Button
                 variant="primary"
                 size="sm"
@@ -115,14 +115,14 @@ const AlertasView = () => {
                 <i className="bi bi-plus-lg me-1"></i>
                 Nueva alerta
               </Button>
-            )}
+            )} */}
           </div>
         </div>
       </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          <i className="bi bi-exclamation-triangle me-2"></i>
+          <i className="fas fa-exclamation-triangle me-2"></i>
           {error}
           <button
             type="button"
@@ -139,7 +139,7 @@ const AlertasView = () => {
             <div className="col-sm-6 col-md-8">
               <div className="input-group">
                 <span className="input-group-text">
-                  <i className="bi bi-search"></i>
+                  <i className="fas fa-search"></i>
                 </span>
                 <input
                   type="text"

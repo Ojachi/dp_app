@@ -229,12 +229,12 @@ const FacturaDetail = ({
                   
                   <div className="mb-3">
                     <label className="form-label text-muted">Vendedor:</label>
-                    <div>{factura.vendedor_nombre || 'No asignado'}</div>
+                    <div>{factura.vendedor?.full_name || 'No asignado'}</div>
                   </div>
                   
                   <div className="mb-3">
                     <label className="form-label text-muted">Distribuidor:</label>
-                    <div>{factura.distribuidor_nombre || 'No asignado'}</div>
+                    <div>{factura.distribuidor?.full_name || 'No asignado'}</div>
                   </div>
                 </div>
               </div>

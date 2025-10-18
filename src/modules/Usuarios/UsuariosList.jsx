@@ -62,12 +62,12 @@ const UsuariosList = ({
     },
     {
       key: 'avatar',
-      header: '',
+      header: 'Avatar',
       render: (usuario) => (
         <div className="d-flex align-items-center justify-content-center">
           <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
                style={{ width: '35px', height: '35px', fontSize: '14px' }}>
-            {usuario.name?.charAt(0)}
+            {usuario.first_name?.charAt(0)}{usuario.last_name?.charAt(0)}
           </div>
         </div>
       ),
@@ -78,8 +78,8 @@ const UsuariosList = ({
       header: 'Usuario',
       render: (usuario) => (
         <div>
-          <div className="fw-semibold">{usuario.name}</div>
-          <div className="text-muted small">@{usuario.name}</div>
+          <div className="fw-semibold">{usuario.first_name} {usuario.last_name}</div>
+          <div className="text-muted small">@{usuario.username}</div>
         </div>  
       )
     },

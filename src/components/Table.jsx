@@ -155,20 +155,23 @@ const Table = ({
               />
             </th>
           )}
-          {columns.map((col) => (
-            <th 
-              key={col.key || col.label} 
-              scope="col"
-              className={`${(col.sortable || sortable) ? 'cursor-pointer user-select-none' : ''} ${col.headerClassName || ''}`}
-              style={{ width: col.width, ...col.headerStyle }}
-              onClick={() => handleSort(col)}
-            >
-              <div className="d-flex align-items-center">
-                {col.label}
-                {(col.sortable || sortable) && renderSortIcon(col)}
-              </div>
-            </th>
-          ))}
+          {columns.map((col) => {
+            const headerContent = col.header !== undefined ? col.header : col.label;
+            return (
+              <th 
+                key={col.key || col.label} 
+                scope="col"
+                className={`${(col.sortable || sortable) ? 'cursor-pointer user-select-none' : ''} ${col.headerClassName || ''}`}
+                style={{ width: col.width, ...col.headerStyle }}
+                onClick={() => handleSort(col)}
+              >
+                <div className="d-flex align-items-center">
+                  {headerContent}
+                  {(col.sortable || sortable) && renderSortIcon(col)}
+                </div>
+              </th>
+            );
+          })}
         </tr>
       </thead>
       <tbody>

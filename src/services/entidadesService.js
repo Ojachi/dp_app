@@ -8,7 +8,7 @@ export const entidadesService = {
   clientes: {
     async getAll() {
       try {
-        const response = await apiClient.get('/clientes/');
+        const response = await apiClient.get('/clientes/clientes');
         return response.data;
       } catch (error) {
         throw new Error('Error al obtener clientes');
@@ -17,7 +17,7 @@ export const entidadesService = {
 
     async create(clienteData) {
       try {
-        const response = await apiClient.post('/clientes/', clienteData);
+        const response = await apiClient.post('/clientes/clientes/', clienteData);
         return response.data;
       } catch (error) {
         throw new Error(error.response?.data?.message || 'Error al crear cliente');
@@ -26,7 +26,7 @@ export const entidadesService = {
 
     async update(id, clienteData) {
       try {
-        const response = await apiClient.put(`/clientes/${id}/`, clienteData);
+        const response = await apiClient.put(`/clientes/clientes/${id}/`, clienteData);
         return response.data;
       } catch (error) {
         throw new Error('Error al actualizar cliente');
@@ -35,7 +35,7 @@ export const entidadesService = {
 
     async delete(id) {
       try {
-        await apiClient.delete(`/clientes/${id}/`);
+        await apiClient.delete(`/clientes/clientes/${id}/`);
         return true;
       } catch (error) {
         throw new Error('Error al eliminar cliente');

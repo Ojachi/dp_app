@@ -28,7 +28,13 @@ const PagoDetalleModal = ({ pago, show, onHide, loading }) => {
     ? new Date(value).toLocaleString('es-CO')
     : 'Sin registro';
 
-  const clienteNombre = pago?.factura?.cliente?.nombre || pago?.cliente_nombre || 'Sin dato';
+  const clienteNombre = pago?.factura?.cliente_nombre|| pago?.cliente_nombre || 'Sin dato';
+  const valor = Number(pago?.valor_pagado || pago?.monto || 0);
+  const descuento = Number(pago?.descuento || 0);
+  const retencion = Number(pago?.retencion || 0);
+  const ica = Number(pago?.ica || 0);
+  const nota = Number(pago?.nota || 0);
+  const totalAplicado = valor + descuento + retencion + ica + nota;
 
   return (
     <Modal show={show} onHide={onHide} title="Detalle del Pago" size="lg">
@@ -68,8 +74,17 @@ const PagoDetalleModal = ({ pago, show, onHide, loading }) => {
                         </div>
                       )}
                       <div className="mb-2">
-                        <strong>Valor pagado:</strong>{' '}
-                        <span className="text-success fw-bold">{formatCurrency(pago.valor_pagado)}</span>
+                        <strong>Total aplicado:</strong>{' '}
+                        <span className="text-success fw-bold">{formatCurrency(totalAplicado)}</span>
+                      </div>
+                      <div className="mb-2">
+                        <small className="text-muted">
+                          {valor ? `Pago ${formatCurrency(valor)}` : ''}
+                          {descuento ? `, Desc. ${formatCurrency(descuento)}` : ''}
+                          {retencion ? `, Ret. ${formatCurrency(retencion)}` : ''}
+                          {ica ? `, ICA ${formatCurrency(ica)}` : ''}
+                          {nota ? `, Nota ${formatCurrency(nota)}` : ''}
+                        </small>
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -124,7 +139,7 @@ const PagoDetalleModal = ({ pago, show, onHide, loading }) => {
                       </div>
                       <div className="col-md-6">
                         <div className="mb-2">
-                          <strong>Total factura:</strong> {formatCurrency(pago.factura.total || pago.factura.total_factura)}
+                          <strong>Total factura:</strong> {formatCurrency(pago.factura.valor_total || pago.factura.total_factura)}
                         </div>
                         <div className="mb-2">
                           <strong>Saldo pendiente:</strong> {formatCurrency(pago.factura.saldo_pendiente)}

@@ -44,7 +44,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
               label="Buscar"
               placeholder="Nombre, usuario o email..."
               value={filtros.buscar}
-              onChange={(e) => handleChange('buscar', e.target.value)}
+              onChange={(val) => handleChange('buscar', val)}
               icon="bi-search"
             />
           </div>
@@ -54,7 +54,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
             <Select
               label="Estado"
               value={filtros.is_active}
-              onChange={(e) => handleChange('is_active', e.target.value)}
+              onChange={(val) => handleChange('is_active', val)}
               options={opcionesEstado}
             />
           </div>
@@ -64,7 +64,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
             <Select
               label="Rol"
               value={filtros.rol}
-              onChange={(e) => handleChange('rol', e.target.value)}
+              onChange={(val) => handleChange('rol', val)}
               options={opcionesRol}
             />
           </div>
@@ -127,8 +127,6 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
                     ></button>
                   </span>
                 )}
-                
-                {/* Ciudad removida */}
               </div>
             </div>
           </div>

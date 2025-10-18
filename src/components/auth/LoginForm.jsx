@@ -83,18 +83,6 @@ const LoginForm = ({ onSubmit, loading }) => {
           'Iniciar Sesión'
         )}
       </button>
-
-      <div className="mt-3 text-center">
-        <small className="text-muted">
-          Usuarios de prueba:
-          <br />
-          <strong>Gerente:</strong> gerente@distribuciones.com
-          <br />
-          <strong>Vendedor:</strong> vendedor@distribuciones.com
-          <br />
-          <strong>Distribuidor:</strong> distribuidor@distribuciones.com
-        </small>
-      </div>
     </form>
   );
 };

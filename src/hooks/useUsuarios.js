@@ -1,12 +1,12 @@
 /**
  * Hook personalizado para gestión de usuarios
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { usuariosService } from '../services/usuariosService';
 
 export const useUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
-  const [estadisticas, setEstadisticas] = useState(null);
+  //const [estadisticas, setEstadisticas] = useState(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,24 +30,24 @@ export const useUsuarios = () => {
   }, []);
 
   // Cargar estadísticas
-  const loadEstadisticas = useCallback(async () => {
-    try {
-      const data = await usuariosService.getEstadisticas();
-      setEstadisticas(data);
-      return data;
-    } catch (err) {
-      console.error('Error al cargar estadísticas:', err);
-      setEstadisticas({
-        total_usuarios: 0,
-        activos: 0,
-        inactivos: 0,
-        por_rol: { gerentes: 0, vendedores: 0, distribuidores: 0 },
-        registrados_mes: 0,
-        ultimo_login_24h: 0,
-        sin_login_30_dias: 0
-      });
-    }
-  }, []);
+  // const loadEstadisticas = useCallback(async () => {
+  //   try {
+  //     const data = await usuariosService.getEstadisticas();
+  //     setEstadisticas(data);
+  //     return data;
+  //   } catch (err) {
+  //     console.error('Error al cargar estadísticas:', err);
+  //     setEstadisticas({
+  //       total_usuarios: 0,
+  //       activos: 0,
+  //       inactivos: 0,
+  //       por_rol: { gerentes: 0, vendedores: 0, distribuidores: 0 },
+  //       registrados_mes: 0,
+  //       ultimo_login_24h: 0,
+  //       sin_login_30_dias: 0
+  //     });
+  //   }
+  // }, []);
 
   // Cargar logs de actividad
   const loadLogs = useCallback(async (filtros = {}) => {
@@ -83,12 +83,12 @@ export const useUsuarios = () => {
       setUsuarios(prev => [nuevoUsuario, ...prev]);
       
       // Actualizar estadísticas
-      setEstadisticas(prev => prev ? {
-        ...prev,
-        total_usuarios: prev.total_usuarios + 1,
-        activos: nuevoUsuario.is_active ? prev.activos + 1 : prev.activos,
-        inactivos: !nuevoUsuario.is_active ? prev.inactivos + 1 : prev.inactivos
-      } : null);
+      // setEstadisticas(prev => prev ? {
+      //   ...prev,
+      //   total_usuarios: prev.total_usuarios + 1,
+      //   activos: nuevoUsuario.is_active ? prev.activos + 1 : prev.activos,
+      //   inactivos: !nuevoUsuario.is_active ? prev.inactivos + 1 : prev.inactivos
+      // } : null);
       
       return nuevoUsuario;
     } catch (err) {
@@ -129,11 +129,11 @@ export const useUsuarios = () => {
       ));
       
       // Actualizar estadísticas
-      setEstadisticas(prev => prev ? {
-        ...prev,
-        activos: Math.max(0, prev.activos - 1),
-        inactivos: prev.inactivos + 1
-      } : null);
+      // setEstadisticas(prev => prev ? {
+      //   ...prev,
+      //   activos: Math.max(0, prev.activos - 1),
+      //   inactivos: prev.inactivos + 1
+      // } : null);
       
       return true;
     } catch (err) {
@@ -154,12 +154,12 @@ export const useUsuarios = () => {
       ));
       
       // Actualizar estadísticas
-      const cambio = is_active ? 1 : -1;
-      setEstadisticas(prev => prev ? {
-        ...prev,
-        activos: Math.max(0, prev.activos + cambio),
-        inactivos: Math.max(0, prev.inactivos - cambio)
-      } : null);
+      // const cambio = is_active ? 1 : -1;
+      // setEstadisticas(prev => prev ? {
+      //   ...prev,
+      //   activos: Math.max(0, prev.activos + cambio),
+      //   inactivos: Math.max(0, prev.inactivos - cambio)
+      // } : null);
       
       return usuarioActualizado;
     } catch (err) {
@@ -203,16 +203,16 @@ export const useUsuarios = () => {
   }, []);
 
   // Exportar usuarios
-  const exportarUsuarios = useCallback(async (filtros = {}, formato = 'excel') => {
-    try {
-      setError(null);
-      const result = await usuariosService.exportarUsuarios(filtros, formato);
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+  // const exportarUsuarios = useCallback(async (filtros = {}, formato = 'excel') => {
+  //   try {
+  //     setError(null);
+  //     const result = await usuariosService.exportarUsuarios(filtros, formato);
+  //     return result;
+  //   } catch (err) {
+  //     setError(err.message);
+  //     throw err;
+  //   }
+  // }, []);
 
   // Obtener rol de usuario formateado
   const getUserRole = useCallback((usuario) => {
@@ -237,14 +237,14 @@ export const useUsuarios = () => {
   }, [usuarios]);
 
   // Efecto para cargar estadísticas al inicializar
-  useEffect(() => {
-    loadEstadisticas();
-  }, [loadEstadisticas]);
+  // useEffect(() => {
+  //   loadEstadisticas();
+  // }, [loadEstadisticas]);
 
   return {
     // Estado
     usuarios,
-    estadisticas,
+    //estadisticas,
     logs,
     loading,
     error,
@@ -259,9 +259,9 @@ export const useUsuarios = () => {
     // Acciones específicas
     toggleUsuarioStatus,
     resetearPassword,
-    loadEstadisticas,
+    //loadEstadisticas,
     loadLogs,
-    exportarUsuarios,
+    //exportarUsuarios,
     
     // Validaciones
     validarEmail,
@@ -274,11 +274,11 @@ export const useUsuarios = () => {
     setUsuarios,
     
     // Propiedades derivadas
-    totalUsuarios: estadisticas?.total_usuarios || 0,
-    usuariosActivos: estadisticas?.activos || 0,
-    usuariosInactivos: estadisticas?.inactivos || 0,
-    gerentes: estadisticas?.por_rol?.gerentes || 0,
-    vendedores: estadisticas?.por_rol?.vendedores || 0,
-    distribuidores: estadisticas?.por_rol?.distribuidores || 0
+    // totalUsuarios: estadisticas?.total_usuarios || 0,
+    // usuariosActivos: estadisticas?.activos || 0,
+    // usuariosInactivos: estadisticas?.inactivos || 0,
+    // gerentes: estadisticas?.por_rol?.gerentes || 0,
+    // vendedores: estadisticas?.por_rol?.vendedores || 0,
+    // distribuidores: estadisticas?.por_rol?.distribuidores || 0
   };
 };

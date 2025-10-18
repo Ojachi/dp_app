@@ -8,9 +8,11 @@ import NavItem from '../components/NavItem';
 import { USER_ROLES } from '../utils/constants';
 import { FEATURE_FLAGS } from '../config/featureFlags';
 
-const Sidebar = () => {
-  const { user, hasRole } = useAuth();
+const Sidebar = ({ isOpen = true, onClose }) => {
+  const { hasRole } = useAuth();
   const { contadorNuevas = 0 } = useAlertas({ autoLoad: FEATURE_FLAGS.alertas });
+
+  // Footer removido para evitar duplicar información del usuario (se muestra en el header)
 
   // Definir elementos de navegación con permisos
   const navItems = [
@@ -64,14 +66,22 @@ const Sidebar = () => {
     .filter(Boolean)
     .filter(item => !item.roles || hasRole(item.roles));
 
+  // Sidebar unfoldable en desktop (solo íconos) y offcanvas en móvil (.show controla móvil)
   return (
-    <div className="sidebar bg-dark text-white d-flex flex-column" style={{ width: '250px', minHeight: '100%' }}>
+    <div className={`sidebar bg-dark text-white d-flex flex-column unfoldable ${isOpen ? 'show' : ''}`}>
       {/* Header del sidebar */}
-      <div className="sidebar-header p-3 border-bottom border-secondary">
-        <h6 className="mb-0 text-center">
-          <i className="fas fa-bars me-2"></i>
-          Navegación
+      <div className="sidebar-header p-3 border-bottom border-secondary d-flex align-items-center justify-content-between">
+        <h6 className="mb-0 d-flex align-items-center">
+          <i className="fas fa-compass me-2"></i>
+          <span className="sidebar-title-text">Navegación</span>
         </h6>
+        <button
+          className="btn btn-outline-light btn-sm d-lg-none"
+          onClick={onClose}
+          aria-label="Close sidebar"
+        >
+          <i className="fas fa-times"></i>
+        </button>
       </div>
 
       {/* Navegación principal */}
@@ -81,19 +91,6 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer del sidebar */}
-      <div className="sidebar-footer p-3 border-top border-secondary">
-        <div className="text-center">
-          <small className="text-muted d-block">
-            {user?.first_name || user?.full_name || user?.email}
-          </small>
-          <small className="text-muted">
-            {user?.is_gerente ? 'Gerente' : 
-             user?.is_vendedor ? 'Vendedor' : 
-             user?.is_distribuidor ? 'Distribuidor' : 'Usuario'}
-          </small>
-        </div>
-      </div>
     </div>
   );
 };

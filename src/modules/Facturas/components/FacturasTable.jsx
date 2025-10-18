@@ -91,12 +91,12 @@ const FacturasTable = ({
                     
                     <td>
                       <div className="fw-medium">
-                        {factura.cliente?.nombre || 'Sin cliente'}
+                        {factura.cliente_nombre || 'Sin cliente'}
                       </div>
-                      {factura.cliente?.telefono && (
+                      {factura.cliente_telefono && (
                         <small className="text-muted">
                           <i className="fas fa-phone me-1"></i>
-                          {factura.cliente.telefono}
+                          {factura.cliente_telefono}
                         </small>
                       )}
                     </td>

@@ -49,8 +49,10 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
   const isR = facturaSeleccionada?.tipo === 'R';
   const mostrarRetencion = (isGerente() || isVendedor()) && isFE;
   const mostrarICA = (isGerente() || isVendedor()) && isR;
-  const esConsignacion = formData.tipo_pago === 'consignacion';
-  const esEfectivo = formData.tipo_pago === 'efectivo';
+  // Inferir por nombre del método si es consignación o efectivo
+  const metodoNombre = (metodoSeleccionado?.nombre || '').toLowerCase();
+  const esConsignacion = formData.tipo_pago === 'consignacion' || /consign/.test(metodoNombre);
+  const esEfectivo = formData.tipo_pago === 'efectivo' || /efectiv/.test(metodoNombre);
 
   const parseNumber = (v) => {
     const n = Number.parseFloat(String(v).replace(/,/g, '.'));
@@ -61,7 +63,8 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
   const descuento = parseNumber(formData.descuento);
   const retencion = mostrarRetencion ? parseNumber(formData.retencion) : 0;
   const ica = mostrarICA ? parseNumber(formData.ica) : 0;
-  const valorFinal = Math.max(0, valorBase - valorNota - descuento - retencion - ica);
+  // Bajo la nueva lógica, todo lo anterior aplica a la factura (suma)
+  const totalAplicado = Math.max(0, valorBase + valorNota + descuento + retencion + ica);
 
   const setDefaultsFromPago = useCallback(() => {
     if (!pago) {
@@ -180,17 +183,14 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       newErrors.factura_id = 'Debe seleccionar una factura';
     }
 
+    const saldo = facturaSeleccionada ? Number.parseFloat(facturaSeleccionada.saldo_pendiente || 0) : null;
     if (!pago) {
-      if (!formData.valor_pagado) {
-        newErrors.valor_pagado = 'El valor pagado es requerido';
-      } else {
-        const valor = parseNumber(formData.valor_pagado);
-        const saldo = facturaSeleccionada ? Number.parseFloat(facturaSeleccionada.saldo_pendiente || 0) : null;
-        if (Number.isNaN(valor) || valor <= 0) {
-          newErrors.valor_pagado = 'El valor debe ser mayor a 0';
-        } else if (saldo !== null && !Number.isNaN(saldo) && valorFinal > saldo) {
-          newErrors.valor_pagado = 'El valor final a aplicar excede el saldo pendiente';
-        }
+      const hayAlgunaAplicacion = (valorBase > 0) || (valorNota > 0) || (descuento > 0) || (retencion > 0) || (ica > 0);
+      if (!hayAlgunaAplicacion) {
+        newErrors.valor_pagado = 'Ingrese al menos un valor (pago, descuento, retención, ICA o nota)';
+      }
+      if (saldo !== null && !Number.isNaN(saldo) && totalAplicado > saldo) {
+        newErrors.valor_pagado = 'El total a aplicar excede el saldo pendiente';
       }
     }
 
@@ -263,11 +263,15 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       return basePayload;
     }
 
-    const valor = valorFinal;
+    const valor = valorBase;
     return {
       ...basePayload,
       factura_id: Number.parseInt(formData.factura_id, 10),
       valor_pagado: Number.isNaN(valor) ? 0 : valor,
+      descuento: Number.isNaN(descuento) ? 0 : descuento,
+      retencion: Number.isNaN(retencion) ? 0 : retencion,
+      ica: Number.isNaN(ica) ? 0 : ica,
+      nota: Number.isNaN(valorNota) ? 0 : valorNota,
       // archivos opcionales: comprobante o firma
       ...(formData.comprobante ? { comprobante: formData.comprobante } : {}),
       ...(formData.firma ? { comprobante: formData.firma } : {}),
@@ -374,9 +378,9 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
             />
             {errors.valor_pagado && <div className="invalid-feedback">{errors.valor_pagado}</div>}
           </div>
-          {!pago && facturaSeleccionada && formData.valor_pagado && (
+          {!pago && facturaSeleccionada && (valorBase > 0 || valorNota > 0 || descuento > 0 || retencion > 0 || ica > 0) && (
             <small className="text-muted">
-              Saldo restante: {formatCurrency((Number.parseFloat(facturaSeleccionada.saldo_pendiente || 0) || 0) - (Number.parseFloat(formData.valor_pagado) || 0))}
+              Saldo restante: {formatCurrency((Number.parseFloat(facturaSeleccionada.saldo_pendiente || 0) || 0) - totalAplicado)}
             </small>
           )}
         </div>
@@ -597,12 +601,12 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
         <div className="col-12">
           <div className="alert alert-info py-2">
             <div className="d-flex flex-wrap gap-3 align-items-center">
-              <div><strong>Base:</strong> {formatCurrency(valorBase)}</div>
-              {formData.tiene_nota && <div><strong>Nota:</strong> -{formatCurrency(valorNota)}</div>}
-              {descuento > 0 && <div><strong>Descuento:</strong> -{formatCurrency(descuento)}</div>}
-              {retencion > 0 && <div><strong>Retención:</strong> -{formatCurrency(retencion)}</div>}
-              {ica > 0 && <div><strong>ICA:</strong> -{formatCurrency(ica)}</div>}
-              <div className="ms-auto"><strong>Total a aplicar:</strong> {formatCurrency(valorFinal)}</div>
+              <div><strong>Pago:</strong> {formatCurrency(valorBase)}</div>
+              {formData.tiene_nota && <div><strong>Nota:</strong> +{formatCurrency(valorNota)}</div>}
+              {descuento > 0 && <div><strong>Descuento:</strong> +{formatCurrency(descuento)}</div>}
+              {retencion > 0 && <div><strong>Retención:</strong> +{formatCurrency(retencion)}</div>}
+              {ica > 0 && <div><strong>ICA:</strong> +{formatCurrency(ica)}</div>}
+              <div className="ms-auto"><strong>Total a aplicar:</strong> {formatCurrency(totalAplicado)}</div>
             </div>
           </div>
         </div>

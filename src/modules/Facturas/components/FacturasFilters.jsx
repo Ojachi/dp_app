@@ -9,6 +9,7 @@ import { SearchBar } from '../../../components/SearchBar';
 const FacturasFilters = ({
   filters,
   onFiltersChange,
+  onApplyFilters, // compat: some parents may pass onApplyFilters
   entidades,
   onClearFilters,
   loading = false
@@ -40,7 +41,8 @@ const FacturasFilters = ({
       [name]: value
     };
     setLocalFilters(updatedFilters);
-    onFiltersChange(updatedFilters);
+    const cb = onFiltersChange || onApplyFilters;
+    if (cb) cb(updatedFilters);
   };
 
   const handleClearAll = () => {
@@ -76,19 +78,23 @@ const FacturasFilters = ({
     { value: 'sin_saldo', label: 'Sin saldo pendiente' }
   ];
 
+  const asArray = (data) => (Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : []));
+
   const vendedoresOptions = [
     { value: '', label: 'Todos los vendedores' },
-    ...(entidades?.vendedores || []).map(vendedor => ({
-      value: vendedor.id,
-      label: vendedor.nombre
+    ...asArray(entidades?.vendedores).map(vendedor => ({
+      // Para filtros, enviar SIEMPRE el ID del modelo Vendedor
+      value: String(vendedor.id ?? vendedor.value ?? ''),
+      label: vendedor.usuario?.full_name ?? vendedor.nombre ?? vendedor.usuario_nombre ?? vendedor.label ?? 'Vendedor'
     }))
   ];
 
   const distribuidoresOptions = [
     { value: '', label: 'Todos los distribuidores' },
-    ...(entidades?.distribuidores || []).map(distribuidor => ({
-      value: distribuidor.id,
-      label: distribuidor.nombre
+    ...asArray(entidades?.distribuidores).map(distribuidor => ({
+      // Para filtros, enviar SIEMPRE el ID del modelo Distribuidor
+      value: String(distribuidor.id ?? distribuidor.value ?? ''),
+      label: distribuidor.usuario?.full_name ?? distribuidor.nombre ?? distribuidor.usuario_nombre ?? distribuidor.label ?? 'Distribuidor'
     }))
   ];
 
@@ -166,6 +172,7 @@ const FacturasFilters = ({
                 value={localFilters.vendedor}
                 onChange={(value) => handleFilterChange('vendedor', value)}
                 options={vendedoresOptions}
+                placeholder={null}
                 disabled={loading}
               />
             </div>
@@ -176,6 +183,7 @@ const FacturasFilters = ({
                 value={localFilters.distribuidor}
                 onChange={(value) => handleFilterChange('distribuidor', value)}
                 options={distribuidoresOptions}
+                placeholder={null}
                 disabled={loading}
               />
             </div>
@@ -186,6 +194,7 @@ const FacturasFilters = ({
                 value={localFilters.estado}
                 onChange={(value) => handleFilterChange('estado', value)}
                 options={estadosOptions}
+                placeholder={null}
                 disabled={loading}
               />
             </div>
@@ -269,6 +278,7 @@ const FacturasFilters = ({
                 value={localFilters.saldo_pendiente}
                 onChange={(value) => handleFilterChange('saldo_pendiente', value)}
                 options={saldoPendienteOptions}
+                placeholder={null}
                 disabled={loading}
               />
             </div>

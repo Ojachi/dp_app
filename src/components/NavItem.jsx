@@ -19,8 +19,8 @@ const NavItem = ({ to, label, icon, badge }) => {
       }}
     >
       <div className="d-flex align-items-center">
-        {icon && <i className={`${icon} me-2`} style={{ width: '16px' }}></i>}
-        <span>{label}</span>
+        {icon && <i className={`${icon} me-2`} style={{ width: '20px', minWidth: '20px', textAlign: 'center' }}></i>}
+        <span className="nav-label">{label}</span>
       </div>
       
       {badge && (

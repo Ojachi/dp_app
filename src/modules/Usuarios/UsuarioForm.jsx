@@ -212,13 +212,13 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           <Input
             label="Nombre de Usuario *"
             value={formData.username}
-            onChange={(e) => handleChange('username', e.target.value)}
+            onChange={(val) => handleChange('username', val)}
             onBlur={handleUsernameBlur}
             placeholder="usuario123"
             error={errors.username}
             loading={validatingUsername}
             required
-            helperText="Solo letras, números y guiones bajos"
+            helpText="Solo letras, números y guiones bajos"
           />
         </div>
 
@@ -228,7 +228,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
             type="email"
             label="Email *"
             value={formData.email}
-            onChange={(e) => handleChange('email', e.target.value)}
+            onChange={(val) => handleChange('email', val)}
             onBlur={handleEmailBlur}
             placeholder="usuario@ejemplo.com"
             error={errors.email}
@@ -242,7 +242,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           <Input
             label="Nombre *"
             value={formData.first_name}
-            onChange={(e) => handleChange('first_name', e.target.value)}
+            onChange={(val) => handleChange('first_name', val)}
             placeholder="Juan"
             error={errors.first_name}
             required
@@ -253,7 +253,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           <Input
             label="Apellido *"
             value={formData.last_name}
-            onChange={(e) => handleChange('last_name', e.target.value)}
+            onChange={(val) => handleChange('last_name', val)}
             placeholder="Pérez"
             error={errors.last_name}
             required
@@ -268,7 +268,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
                 type="password"
                 label="Contraseña *"
                 value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
+                onChange={(val) => handleChange('password', val)}
                 placeholder="Mínimo 6 caracteres"
                 error={errors.password}
                 required
@@ -280,7 +280,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
                 type="password"
                 label="Confirmar Contraseña *"
                 value={formData.confirm_password}
-                onChange={(e) => handleChange('confirm_password', e.target.value)}
+                onChange={(val) => handleChange('confirm_password', val)}
                 placeholder="Repetir contraseña"
                 error={errors.confirm_password}
                 required

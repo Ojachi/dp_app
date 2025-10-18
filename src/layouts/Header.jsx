@@ -7,7 +7,7 @@ import { useAlertas } from '../hooks/useAlertas';
 import { useNavigate } from 'react-router-dom';
 import { USER_ROLES } from '../utils/constants';
 
-const Header = () => {
+const Header = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const { contadorNuevas } = useAlertas();
   const navigate = useNavigate();
@@ -27,16 +27,29 @@ const Header = () => {
     return badges[role] || { text: role, class: 'bg-secondary' };
   };
 
-  const roleBadge = getRoleBadge(user?.role || user?.tipo_usuario);
+  const roleBadge = getRoleBadge(user?.roles);
+
+  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
+  const displayEmail = user?.email || '';
 
   return (
     <header className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
-      <div className="container-fluid">
-        {/* Brand */}
-        <span className="navbar-brand mb-0 h1">
-          <i className="fas fa-file-invoice-dollar me-2"></i>
-          Distribuciones Perdomo
-        </span>
+  <div className="container-fluid">
+        {/* Brand + hamburger */}
+        <div className="d-flex align-items-center">
+          <button
+            className="btn btn-outline-light me-2 d-lg-none"
+            type="button"
+            aria-label="Toggle sidebar"
+            onClick={onToggleSidebar}
+          >
+            <i className="fas fa-bars"></i>
+          </button>
+          <span className="navbar-brand mb-0 h1 d-flex align-items-center">
+            <i className="fas fa-file-invoice-dollar me-2"></i>
+            Distribuciones Perdomo
+          </span>
+        </div>
 
         {/* Navegación derecha */}
         <div className="navbar-nav ms-auto d-flex flex-row align-items-center">
@@ -71,13 +84,18 @@ const Header = () => {
             </button>
             
             {showUserMenu && (
-              <ul className="dropdown-menu dropdown-menu-end show">
+              <ul
+                className="dropdown-menu dropdown-menu-end show"
+                style={{ right: 0, left: 'auto', maxWidth: 'min(320px, calc(100vw - 16px))' }}
+              >
                 <li>
-                  <span className="dropdown-item-text">
-                    <strong>{user?.first_name} {user?.last_name}</strong>
-                    <br />
-                    <small className="text-muted">{user?.email}</small>
-                  </span>
+                  <div className="dropdown-item-text">
+                    <div className="fw-semibold">{displayName}</div>
+                    <div className="small text-secondary">{roleBadge.text}</div>
+                    {displayEmail && (
+                      <div className="small text-muted">{displayEmail}</div>
+                    )}
+                  </div>
                 </li>
                 <li><hr className="dropdown-divider" /></li>
                 <li>
