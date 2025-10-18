@@ -17,8 +17,19 @@ export const useAlertas = (options = {}) => {
       setLoading(true);
       setError(null);
       const response = await alertasService.getAlertas(filtros);
-      setAlertas(response.results || []);
-      return response;
+      const rawList = Array.isArray(response) ? response : (response?.results || []);
+      // Normalizar campos según backend
+      const normalized = rawList.map((it) => ({
+        ...it,
+        // bandera de lectura basada en estado
+        leida: typeof it.leida === 'boolean' ? it.leida : it.estado === 'leida',
+        // compatibilidad de fechas
+        created_at: it.created_at || it.fecha_generacion || it.fecha_creacion || null,
+        // tipo plano desde backend
+        tipo: it.tipo || it.tipo_alerta?.tipo || it.tipo_alerta_tipo || it.tipo_alerta_nombre,
+      }));
+      setAlertas(normalized);
+      return { count: response?.count ?? normalized.length, results: normalized };
     } catch (err) {
       setError(err.message);
       setAlertas([]);
@@ -32,17 +43,17 @@ export const useAlertas = (options = {}) => {
   const loadContadores = useCallback(async () => {
     try {
       const data = await alertasService.getContadorAlertas();
-      setContadores(data);
-      return data;
+      // Backend retorna { alertas_nuevas, alertas_criticas }
+      const normalized = {
+        total: null,
+        no_leidas: data.alertas_nuevas ?? 0,
+        criticas: data.alertas_criticas ?? 0,
+      };
+      setContadores(normalized);
+      return normalized;
     } catch (err) {
       console.error('Error al cargar contadores:', err);
-      setContadores({
-        total: 0,
-        no_leidas: 0,
-        por_prioridad: { alta: 0, media: 0, baja: 0 },
-        por_tipo: {},
-        recientes: 0
-      });
+      setContadores({ total: 0, no_leidas: 0, criticas: 0 });
     }
   }, []);
 

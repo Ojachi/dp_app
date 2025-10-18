@@ -218,48 +218,48 @@ const CuentasPorCobrar = ({
         );
       }
     },
-    {
-      key: 'acciones',
-      label: 'Acciones',
-      render: (cuenta) => (
-        <div className="dropdown">
-          <button
-            className="btn btn-sm btn-outline-secondary dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-          >
-            Acciones
-          </button>
-          <ul className="dropdown-menu">
-            <li>
-              <button
-                className="dropdown-item"
-                onClick={() => onVerDetalle(cuenta.id)}
-              >
-                <i className="fas fa-eye me-2"></i>
-                Ver Detalle
-              </button>
-            </li>
-            <li>
-              <button
-                className="dropdown-item"
-                onClick={() => enviarEstadoCuenta(cuenta.id)}
-              >
-                <i className="fas fa-envelope me-2"></i>
-                Enviar Estado
-              </button>
-            </li>
-            <li><hr className="dropdown-divider" /></li>
-            <li>
-              <button className="dropdown-item text-primary">
-                <i className="fas fa-phone me-2"></i>
-                Llamar Cliente
-              </button>
-            </li>
-          </ul>
-        </div>
-      )
-    }
+    // {
+    //   key: 'acciones',
+    //   label: 'Acciones',
+    //   render: (cuenta) => (
+    //     <div className="dropdown">
+    //       <button
+    //         className="btn btn-sm btn-outline-secondary dropdown-toggle"
+    //         type="button"
+    //         data-bs-toggle="dropdown"
+    //       >
+    //         Acciones
+    //       </button>
+    //       <ul className="dropdown-menu">
+    //         <li>
+    //           <button
+    //             className="dropdown-item"
+    //             onClick={() => onVerDetalle(cuenta.id)}
+    //           >
+    //             <i className="fas fa-eye me-2"></i>
+    //             Ver Detalle
+    //           </button>
+    //         </li>
+    //         <li>
+    //           <button
+    //             className="dropdown-item"
+    //             onClick={() => enviarEstadoCuenta(cuenta.id)}
+    //           >
+    //             <i className="fas fa-envelope me-2"></i>
+    //             Enviar Estado
+    //           </button>
+    //         </li>
+    //         <li><hr className="dropdown-divider" /></li>
+    //         <li>
+    //           <button className="dropdown-item text-primary">
+    //             <i className="fas fa-phone me-2"></i>
+    //             Llamar Cliente
+    //           </button>
+    //         </li>
+    //       </ul>
+    //     </div>
+    //   )
+    // }
   ];
 
   return (

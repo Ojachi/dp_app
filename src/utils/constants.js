@@ -28,14 +28,17 @@ export const TIPOS_PAGO = [
 export const ALERTA_ESTADOS = {
   NUEVA: 'nueva',
   LEIDA: 'leida',
-  RESUELTA: 'resuelta'
+  PROCESADA: 'procesada',
+  DESCARTADA: 'descartada'
 };
 
 // Tipos de alerta
 export const TIPOS_ALERTA = {
-  MONTO_ALTO: 'monto_alto',
   VENCIMIENTO: 'vencimiento',
-  PAGO_RECIBIDO: 'pago_recibido'
+  PAGO_PARCIAL: 'pago_parcial',
+  SIN_PAGOS: 'sin_pagos',
+  MONTO_ALTO: 'monto_alto',
+  CUSTOM: 'custom'
 };
 
 // Configuración de paginación

@@ -15,8 +15,8 @@ export const alertasService = {
         }
       });
 
-      const response = await apiClient.get(`/alertas/?${params.toString()}`);
-      return response.data;
+  const response = await apiClient.get(`/alertas/?${params.toString()}`);
+  return response.data;
     } catch (error) {
       // Datos de respaldo para desarrollo
       return {
@@ -107,33 +107,17 @@ export const alertasService = {
   async getContadorAlertas() {
     try {
       const response = await apiClient.get('/alertas/contador/');
-      return response.data;
+      return response.data; // { alertas_nuevas, alertas_criticas }
     } catch (error) {
       // Datos de respaldo
-      return {
-        total: 15,
-        no_leidas: 8,
-        por_prioridad: {
-          alta: 3,
-          media: 5,
-          baja: 7
-        },
-        por_tipo: {
-          vencimiento: 4,
-          pago: 6,
-          factura: 2,
-          cobranza: 2,
-          sistema: 1
-        },
-        recientes: 3
-      };
+      return { alertas_nuevas: 0, alertas_criticas: 0 };
     }
   },
 
   // Marcar alerta como leída
   async marcarComoLeida(alertaId) {
     try {
-      const response = await apiClient.put(`/alertas/${alertaId}/marcar_leida/`);
+      const response = await apiClient.patch(`/alertas/${alertaId}/marcar-leida/`, { leida: true });
       return response.data;
     } catch (error) {
       throw new Error('Error al marcar alerta como leída');
@@ -153,6 +137,8 @@ export const alertasService = {
   // Crear nueva alerta
   async createAlerta(alertaData) {
     try {
+      // Nota: El backend actual no expone creación directa de Alerta por usuarios.
+      // Este endpoint fallará si no existe; se mantiene para compatibilidad y puede ocultarse en UI.
       const response = await apiClient.post('/alertas/', alertaData);
       return response.data;
     } catch (error) {
@@ -163,7 +149,7 @@ export const alertasService = {
   // Marcar alerta como no leída
   async marcarNoLeida(id) {
     try {
-      const response = await apiClient.patch(`/alertas/${id}/no-leer/`);
+      const response = await apiClient.patch(`/alertas/${id}/marcar-leida/`, { leida: false });
       return response.data;
     } catch (error) {
       throw new Error('Error al marcar alerta como no leída');
@@ -173,7 +159,7 @@ export const alertasService = {
   // Marcar múltiples alertas como leídas
   async marcarVariasLeidas(ids) {
     try {
-      const response = await apiClient.patch('/alertas/leer-multiples/', { ids });
+      const response = await apiClient.patch('/alertas/leer-multiples/', { ids, leida: true });
       return response.data;
     } catch (error) {
       throw new Error('Error al marcar alertas como leídas');
@@ -183,8 +169,9 @@ export const alertasService = {
   // Eliminar alerta
   async deleteAlerta(id) {
     try {
-      await apiClient.delete(`/alertas/${id}/`);
-      return { success: true };
+      // Backend no permite DELETE; actualizamos estado a 'descartada'
+      const response = await apiClient.patch(`/alertas/${id}/`, { estado: 'descartada' });
+      return { success: true, data: response.data };
     } catch (error) {
       throw new Error('Error al eliminar alerta');
     }
@@ -198,11 +185,10 @@ export const alertasService = {
     } catch (error) {
       return [
         { id: 'vencimiento', nombre: 'Vencimiento', icono: 'fas fa-clock', color: 'warning' },
-        { id: 'pago', nombre: 'Pagos', icono: 'fas fa-money-bill', color: 'success' },
-        { id: 'factura', nombre: 'Facturas', icono: 'fas fa-file-invoice', color: 'primary' },
-        { id: 'cobranza', nombre: 'Cobranza', icono: 'fas fa-exclamation-triangle', color: 'danger' },
-        { id: 'sistema', nombre: 'Sistema', icono: 'fas fa-cog', color: 'info' },
-        { id: 'recordatorio', nombre: 'Recordatorios', icono: 'fas fa-bell', color: 'secondary' }
+        { id: 'pago_parcial', nombre: 'Pago Parcial', icono: 'fas fa-money-bill', color: 'success' },
+        { id: 'sin_pagos', nombre: 'Sin Pagos', icono: 'fas fa-bell', color: 'secondary' },
+        { id: 'monto_alto', nombre: 'Monto Alto', icono: 'fas fa-exclamation-triangle', color: 'danger' },
+        { id: 'custom', nombre: 'Personalizada', icono: 'fas fa-cog', color: 'info' }
       ];
     }
   },
@@ -210,8 +196,8 @@ export const alertasService = {
   // Obtener alertas en tiempo real
   async getAlertasRecientes(ultimaFecha) {
     try {
-      const params = ultimaFecha ? `?desde=${ultimaFecha}` : '';
-      const response = await apiClient.get(`/alertas/recientes/${params}`);
+      const params = ultimaFecha ? { desde: ultimaFecha } : undefined;
+      const response = await apiClient.get('/alertas/recientes/', { params });
       return response.data;
     } catch (error) {
       return { results: [], count: 0 };
@@ -229,26 +215,12 @@ export const alertasService = {
       const response = await apiClient.get(`/alertas/estadisticas/?${params.toString()}`);
       return response.data;
     } catch (error) {
-      return {
-        alertas_por_dia: [
-          { fecha: '2024-12-01', total: 5, leidas: 3 },
-          { fecha: '2024-12-02', total: 8, leidas: 6 },
-          { fecha: '2024-12-03', total: 3, leidas: 2 },
-          { fecha: '2024-12-04', total: 12, leidas: 10 },
-          { fecha: '2024-12-05', total: 7, leidas: 5 }
-        ],
-        tiempo_promedio_lectura: '2.5 horas',
-        alertas_mas_frecuentes: [
-          { tipo: 'vencimiento', cantidad: 45 },
-          { tipo: 'pago', cantidad: 32 },
-          { tipo: 'cobranza', cantidad: 18 }
-        ]
-      };
+      return null;
     }
   },
 
   // Exportar reporte de alertas
-  async exportarReporte(filtros = {}, formato = 'excel') {
+  async exportarReporte(filtros = {}, formato = 'csv') {
     try {
       const params = new URLSearchParams();
       Object.entries(filtros).forEach(([key, value]) => {
@@ -265,7 +237,7 @@ export const alertasService = {
       const link = document.createElement('a');
       link.href = url;
       
-      const extension = formato === 'pdf' ? 'pdf' : 'xlsx';
+      const extension = formato === 'xlsx' ? 'xlsx' : 'csv';
       link.setAttribute('download', `reporte_alertas_${new Date().getTime()}.${extension}`);
       
       document.body.appendChild(link);
