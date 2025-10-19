@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAlertas } from '../hooks/useAlertas';
 import { useNavigate } from 'react-router-dom';
 import { USER_ROLES } from '../utils/constants';
+import logoClaro from '../assets/logo_claro.png';
 
 const Header = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
@@ -46,8 +47,13 @@ const Header = ({ onToggleSidebar }) => {
             <i className="fas fa-bars"></i>
           </button>
           <span className="navbar-brand mb-0 h1 d-flex align-items-center">
-            <i className="fas fa-file-invoice-dollar me-2"></i>
-            Distribuciones Perdomo
+            <img
+              src={logoClaro}
+              alt="Distribuciones Perdomo"
+              className="me-2"
+              style={{ height: 28, width: 'auto', display: 'block' }}
+            />
+            <span className="d-none d-sm-inline">Distribuciones Perdomo</span>
           </span>
         </div>
 

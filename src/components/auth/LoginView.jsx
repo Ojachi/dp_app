@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import LoginForm from './LoginForm';
 import './Auth.css';
 import { DEFAULT_PRIVATE_ROUTE } from '../../config/featureFlags';
+import logo from '../../assets/logo.png';
 
 const LoginView = () => {
   const [loading, setLoading] = useState(false);
@@ -41,9 +42,15 @@ const LoginView = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <div className="auth-header">
-          <h2>Distribuciones Perdomo</h2>
-          <p>Sistema de Gestión de Facturas y Pagos</p>
+        <div className="auth-header text-center">
+          <img
+            src={logo}
+            alt="Distribuciones Perdomo"
+            style={{ height: 164, width: 'auto' }}
+            className="mb-2"
+          />
+          {/* <h2 className="h4 mb-1">Distribuciones Perdomo</h2> */}
+          <p className="text-muted mb-0">Sistema de Gestión de Facturas y Pagos</p>
         </div>
         
         {error && (
