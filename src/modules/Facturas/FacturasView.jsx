@@ -8,17 +8,19 @@ import { useFacturas } from '../../hooks/useFacturas';
 import { useApi } from '../../hooks/useApi';
 import { facturasService } from '../../services/facturasService';
 import FacturasTable from './components/FacturasTable';
-import FacturasFilters from './components/FacturasFilters';
+// import FacturasFilters from './components/FacturasFilters';
 import FacturaForm from './components/FacturaForm';
 import { entidadesService } from '../../services/entidadesService';
 import FacturaDetail from './components/FacturaDetail';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
+import SearchBar from '../../components/SearchBar';
+import FiltersSidebar from '../../components/FiltersSidebar';
 
 const FacturasView = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { isGerente } = useAuth();
+  const { isGerente, isDistribuidor, isVendedor } = useAuth();
   const { execute, loading: apiLoading } = useApi();
   
   // Estados locales
@@ -26,15 +28,16 @@ const FacturasView = () => {
   const [selectedFactura, setSelectedFactura] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState(null);
-  const [entidades, setEntidades] = useState({ clientes: [], vendedores: [], distribuidores: [] });
+  const [entidades, setEntidades] = useState({ clientes: [], vendedores: [], distribuidores: [], poblaciones: [] });
 
   // Cargar entidades de apoyo (clientes, vendedores, distribuidores)
   const loadEntidades = async () => {
     try {
-      const [clientes, vendedores, distribuidores] = await Promise.all([
+      const [clientes, vendedores, distribuidores, poblaciones] = await Promise.all([
         entidadesService.clientes.getAll(),
         entidadesService.vendedores.getAll(),
         entidadesService.distribuidores.getAll(),
+        entidadesService.poblaciones.getAll(),
       ]);
       const toArray = (data) => {
         if (Array.isArray(data)) return data;
@@ -44,7 +47,8 @@ const FacturasView = () => {
       setEntidades({
         clientes: toArray(clientes),
         vendedores: toArray(vendedores),
-        distribuidores: toArray(distribuidores)
+        distribuidores: toArray(distribuidores),
+        poblaciones: toArray(poblaciones)
       });
     } catch (e) {
       console.error('Error cargando entidades:', e);
@@ -66,7 +70,7 @@ const FacturasView = () => {
     error,
     filters,
     pagination,
-    applyFilters,
+  applyFilters,
     clearFilters,
     refreshFacturas
   } = useFacturas();
@@ -167,6 +171,18 @@ const FacturasView = () => {
           delete payload.cliente_nuevo;
         }
 
+        // Si viene una sucursal nueva desde el formulario, crearla ahora
+        if (payload.sucursal_nueva) {
+          const nuevaSucursal = await entidadesService.sucursales.create({
+            cliente: payload.cliente_id,
+            poblacion: payload.sucursal_nueva.poblacion_id,
+            codigo: payload.sucursal_nueva.codigo,
+            condicion_pago: payload.sucursal_nueva.condicion_pago
+          });
+          payload.cliente_sucursal_id = nuevaSucursal.id;
+          delete payload.sucursal_nueva;
+        }
+
         if (isEdit) {
           return facturasService.updateFactura(selectedFactura.id, payload);
         } else {
@@ -193,6 +209,8 @@ const FacturasView = () => {
     setShowModal(true);
   };
 
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+
   // Renderizar contenido según la vista actual
   const renderContent = () => {
     if (loading) {
@@ -212,6 +230,10 @@ const FacturasView = () => {
             onEdit={() => handleEditFactura(selectedFactura)}
             onDelete={() => handleDeleteFactura(selectedFactura)}
             onClose={() => handleViewChange('list')}
+            canEdit={isGerente()}
+            canDelete={isGerente()}
+            canViewPayments={isGerente() || isDistribuidor() || (isVendedor && isVendedor())}
+            canEditEntrega={isGerente() || isDistribuidor()}
             loading={apiLoading}
           />
         );
@@ -219,25 +241,129 @@ const FacturasView = () => {
       default:
         return (
           <div>
-            {/* Filtros */}
-            <FacturasFilters
-              filters={filters}
-              onApplyFilters={applyFilters}
-              onClearFilters={clearFilters}
-              entidades={entidades}
-              onCreateFactura={handleCreateFactura}
-              canCreate={isGerente()}
-            />
+            {/* Toolbar: búsqueda fija + botón Filtros + acciones */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex align-items-center gap-2 flex-grow-1">
+                <div className="flex-grow-1" style={{ maxWidth: '620px' }}>
+                  <SearchBar
+                    placeholder="Buscar por número de factura o cliente..."
+                    value={filters.search || ''}
+                    onChange={(value) => {
+                      const next = { ...filters, search: value };
+                      // Asegurar que no enviemos accidentalmente filtros incompatibles
+                      delete next.numero_factura;
+                      delete next.cliente;
+                      applyFilters(next);
+                    }}
+                  />
+                </div>
+                <button
+                  className={`btn btn-outline-secondary ${showFiltersPanel ? 'active' : ''}`}
+                  onClick={() => setShowFiltersPanel((v) => !v)}
+                >
+                  <i className="fas fa-filter me-1"></i>
+                  Filtros
+                </button>
+                {Object.values(filters || {}).some(v => v !== '' && v !== null && v !== undefined) && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={() => {
+                      clearFilters();
+                      setShowFiltersPanel(false);
+                    }}
+                  >
+                    <i className="fas fa-broom me-1"></i>
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+              <div className="d-flex gap-2">
+                {isGerente() && (
+                  <>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleCreateFactura()}
+                    >
+                      <i className="fas fa-plus me-2"></i>
+                      Agregar Factura
+                    </button>
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => navigate('/importacion')}
+                    >
+                      <i className="fas fa-file-import me-2"></i>
+                      Importar
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Panel de filtros en Sidebar */}
+            {showFiltersPanel && (
+              <FiltersSidebar
+                visible={true}
+                onClose={() => setShowFiltersPanel(false)}
+                filters={filters}
+                setFilters={(updater) => {
+                  const current = filters || {};
+                  const next = typeof updater === 'function' ? updater(current) : updater;
+                  applyFilters(next);
+                }}
+                filterConfig={[
+                  { id: 'vendedor', label: 'Vendedor', type: 'select', options: [{ value: '', label: 'Todos los vendedores' }, ...((Array.isArray(entidades.vendedores) ? entidades.vendedores : []).map(v => ({ value: String(v.id ?? ''), label: v.usuario_nombre ?? v.usuario?.full_name ?? v.codigo ?? 'Vendedor' })))] },
+                  { id: 'distribuidor', label: 'Distribuidor', type: 'select', options: [{ value: '', label: 'Todos los distribuidores' }, ...((Array.isArray(entidades.distribuidores) ? entidades.distribuidores : []).map(d => ({ value: String(d.id ?? ''), label: d.usuario_nombre ?? d.usuario?.full_name ?? d.codigo ?? 'Distribuidor' })))] },
+                  { id: 'tipo', label: 'Tipo de factura', type: 'select', options: [
+                    { value: '', label: 'Todos los tipos' },
+                    { value: 'FE', label: 'Factura Electrónica (FE)' },
+                    { value: 'R', label: 'Remisión (R)' },
+                  ]},
+                  { id: 'estado', label: 'Estado', type: 'select', options: [
+                    { value: '', label: 'Todos los estados' },
+                    { value: 'pendiente', label: 'Pendiente' },
+                    { value: 'parcial', label: 'Pago Parcial' },
+                    { value: 'pagada', label: 'Pagada' },
+                    { value: 'vencida', label: 'Vencida' },
+                    { value: 'cancelada', label: 'Cancelada' },
+                  ]},
+                  { id: 'fecha_desde', label: 'Fecha emisión desde', type: 'input', inputType: 'date' },
+                  { id: 'fecha_hasta', label: 'Fecha emisión hasta', type: 'input', inputType: 'date' },
+                  { id: 'fecha_venc_desde', label: 'Vencimiento desde', type: 'input', inputType: 'date' },
+                  { id: 'fecha_venc_hasta', label: 'Vencimiento hasta', type: 'input', inputType: 'date' },
+                  { id: 'valor_min', label: 'Valor mínimo', type: 'input', inputType: 'number', placeholder: '0' },
+                  { id: 'valor_max', label: 'Valor máximo', type: 'input', inputType: 'number', placeholder: '999999' },
+                  { id: 'saldo_pendiente', label: 'Saldo pendiente', type: 'select', options: [
+                    { value: '', label: 'Todos' },
+                    { value: 'con_saldo', label: 'Con saldo pendiente' },
+                    { value: 'sin_saldo', label: 'Sin saldo pendiente' },
+                  ]},
+                ]}
+                onApply={() => setShowFiltersPanel(false)}
+              />
+            )}
 
             {/* Tabla de facturas */}
             <FacturasTable
-              facturas={facturas}
+              facturas={(function(){
+                // Filtros extra solo-frontend (por si backend no los aplica)
+                let arr = Array.isArray(facturas) ? facturas : [];
+                const toNumber = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
+                const vmin = toNumber(filters.valor_min);
+                const vmax = toNumber(filters.valor_max);
+                const saldoMode = filters.saldo_pendiente;
+                if (vmin !== null) arr = arr.filter(f => Number(f?.valor_total || f?.total || 0) >= vmin);
+                if (vmax !== null) arr = arr.filter(f => Number(f?.valor_total || f?.total || 0) <= vmax);
+                if (saldoMode === 'con_saldo') arr = arr.filter(f => Number(f?.saldo || f?.saldo_pendiente || 0) > 0);
+                if (saldoMode === 'sin_saldo') arr = arr.filter(f => Number(f?.saldo || f?.saldo_pendiente || 0) === 0);
+                return arr;
+              })()}
               pagination={pagination}
               onViewDetail={(factura) => handleViewChange('detail', factura)}
               onEdit={handleEditFactura}
               onDelete={handleDeleteFactura}
               canEdit={isGerente()}
               canDelete={isGerente()}
+              isDistribuidor={isDistribuidor()}
               loading={loading}
               error={error}
             />
@@ -264,24 +390,6 @@ const FacturasView = () => {
           </p>
         </div>
         <div className="d-flex gap-2">
-          {view === 'list' && isGerente() && (
-            <>
-              <button
-                className="btn btn-primary"
-                onClick={() => handleCreateFactura()}
-              >
-                <i className="fas fa-plus me-2"></i>
-                Agregar Factura
-              </button>
-              <button
-                className="btn btn-outline-primary"
-                onClick={() => navigate('/importacion')}
-              >
-                <i className="fas fa-file-import me-2"></i>
-                Importar
-              </button>
-            </>
-          )}
           {view !== 'list' && (
             <button
               className="btn btn-outline-secondary"

@@ -58,8 +58,8 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
   };
 
   return (
-    <div className="border-bottom bg-light">
-      <div className="p-3">
+    <div className="dp-filter dp-card">
+      <div className="dp-card-body">
         {/* Búsqueda principal */}
         <div className="row g-3 align-items-end">
           <div className="col-md-6">
@@ -169,7 +169,7 @@ const PagosFilters = ({ filters, onFiltersChange, onReset }) => {
 
       {/* Filtros activos */}
       {getActiveFiltersCount() > 0 && (
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-3">
           <div className="d-flex flex-wrap gap-1">
             <small className="text-muted me-2">Filtros activos:</small>
             {Object.entries(sanitizeFilters(localFilters)).map(([key, value]) => {

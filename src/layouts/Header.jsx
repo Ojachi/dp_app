@@ -9,7 +9,7 @@ import { USER_ROLES } from '../utils/constants';
 import logoClaro from '../assets/logo_claro.png';
 
 const Header = ({ onToggleSidebar }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isDistribuidor } = useAuth();
   const { contadorNuevas } = useAlertas();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -59,19 +59,21 @@ const Header = ({ onToggleSidebar }) => {
 
         {/* Navegación derecha */}
         <div className="navbar-nav ms-auto d-flex flex-row align-items-center">
-          {/* Contador de alertas */}
-          <button 
-            className="btn btn-outline-light position-relative me-3"
-            onClick={() => navigate('/alertas')}
-            title="Ver alertas"
-          >
-            <i className="fas fa-bell"></i>
-            {contadorNuevas > 0 && (
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                {contadorNuevas}
-              </span>
-            )}
-          </button>
+          {/* Contador de alertas (oculto para distribuidores) */}
+          {!isDistribuidor() && (
+            <button 
+              className="btn btn-outline-light position-relative me-3"
+              onClick={() => navigate('/alertas')}
+              title="Ver alertas"
+            >
+              <i className="fas fa-bell"></i>
+              {contadorNuevas > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {contadorNuevas}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Información del usuario */}
           <div className="dropdown">
@@ -104,24 +106,18 @@ const Header = ({ onToggleSidebar }) => {
                   </div>
                 </li>
                 <li><hr className="dropdown-divider" /></li>
-                <li>
-                  <button 
-                    className="dropdown-item"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    <i className="fas fa-tachometer-alt me-2"></i>
-                    Dashboard
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    className="dropdown-item"
-                    onClick={() => navigate('/alertas')}
-                  >
-                    <i className="fas fa-bell me-2"></i>
-                    Alertas {contadorNuevas > 0 && `(${contadorNuevas})`}
-                  </button>
-                </li>
+                {/* Dashboard eliminado: no se usa en la app */}
+                {!isDistribuidor() && (
+                  <li>
+                    <button 
+                      className="dropdown-item"
+                      onClick={() => navigate('/alertas')}
+                    >
+                      <i className="fas fa-bell me-2"></i>
+                      Alertas {contadorNuevas > 0 && `(${contadorNuevas})`}
+                    </button>
+                  </li>
+                )}
                 <li><hr className="dropdown-divider" /></li>
                 <li>
                   <button 

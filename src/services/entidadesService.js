@@ -43,6 +43,56 @@ export const entidadesService = {
     }
   },
 
+  // Servicios para poblaciones
+  poblaciones: {
+    async getAll() {
+      try {
+        const response = await apiClient.get('/clientes/poblaciones/');
+        return response.data;
+      } catch (error) {
+        throw new Error('Error al obtener poblaciones');
+      }
+    },
+    async create(data) {
+      try {
+        const response = await apiClient.post('/clientes/poblaciones/', data);
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error al crear población');
+      }
+    },
+    async update(id, data) {
+      try {
+        const response = await apiClient.patch(`/clientes/poblaciones/${id}/`, data);
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error al actualizar población');
+      }
+    }
+  },
+
+  // Servicios para sucursales de cliente
+  sucursales: {
+    async getByCliente(clienteId) {
+      try {
+        const response = await apiClient.get('/clientes/clientes-sucursales/', {
+          params: { cliente: clienteId }
+        });
+        return response.data;
+      } catch (error) {
+        throw new Error('Error al obtener sucursales del cliente');
+      }
+    },
+    async create(data) {
+      try {
+        const response = await apiClient.post('/clientes/clientes-sucursales/', data);
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error al crear sucursal');
+      }
+    }
+  },
+
   // Servicios para vendedores
   vendedores: {
     async getAll() {

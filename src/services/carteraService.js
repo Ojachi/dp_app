@@ -133,7 +133,14 @@ const normalizeCuenta = (entrada) => {
     telefono: cliente.telefono || 'N/D',
     email: cliente.email || 'N/D',
     totalDeuda: toNumber(entrada.total_pendiente),
-    facturasPendientes: facturas.length,
+    // Métricas por cliente
+    totalFacturas: Number(entrada.total_facturas ?? 0),
+    facturasActivas: Number(entrada.facturas_activas ?? 0),
+    activasPendientes: Number(entrada.activas_pendientes ?? 0),
+    activasParciales: Number(entrada.activas_parciales ?? 0),
+    activasVencidas: Number(entrada.activas_vencidas ?? 0),
+    // Compatibilidad previa: mantenemos facturasPendientes como 'activas'
+    facturasPendientes: Number(entrada.facturas_activas ?? facturas.length ?? 0),
     facturaVencida: primeraVencida
       ? {
           numero: primeraVencida.numero_factura,

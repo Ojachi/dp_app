@@ -82,18 +82,6 @@ export const pagosService = {
 
   async createPago(pagoData) {
     try {
-      // Enviar multipart si hay archivos
-      const hasFile = pagoData && (pagoData.comprobante instanceof File);
-      if (hasFile) {
-        const form = new FormData();
-        Object.entries(pagoData).forEach(([k, v]) => {
-          if (v !== undefined && v !== null) form.append(k, v);
-        });
-        const response = await apiClient.post('/pagos/', form, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return response.data;
-      }
       const response = await apiClient.post('/pagos/', pagoData);
       return response.data;
     } catch (error) {
@@ -103,17 +91,6 @@ export const pagosService = {
 
   async updatePago(id, pagoData) {
     try {
-      const hasFile = pagoData && (pagoData.comprobante instanceof File);
-      if (hasFile) {
-        const form = new FormData();
-        Object.entries(pagoData).forEach(([k, v]) => {
-          if (v !== undefined && v !== null) form.append(k, v);
-        });
-        const response = await apiClient.put(`/pagos/${id}/`, form, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return response.data;
-      }
       const response = await apiClient.put(`/pagos/${id}/`, pagoData);
       return response.data;
     } catch (error) {
@@ -154,6 +131,42 @@ export const pagosService = {
       return response.data;
     } catch (error) {
       return [];
+    }
+  },
+
+  async getCuentas() {
+    try {
+      const response = await apiClient.get('/pagos/cuentas/');
+      return Array.isArray(response.data?.results) ? response.data.results : (response.data || []);
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async createCuenta(data) {
+    try {
+      const response = await apiClient.post('/pagos/cuentas/', data);
+      return response.data;
+    } catch (error) {
+      throw new Error(extractErrorMessage(error, 'Error al crear cuenta de pago'));
+    }
+  },
+
+  async updateCuenta(id, data) {
+    try {
+      const response = await apiClient.put(`/pagos/cuentas/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      throw new Error(extractErrorMessage(error, 'Error al actualizar cuenta de pago'));
+    }
+  },
+
+  async deleteCuenta(id) {
+    try {
+      await apiClient.delete(`/pagos/cuentas/${id}/`);
+      return { success: true };
+    } catch (error) {
+      throw new Error(extractErrorMessage(error, 'Error al eliminar cuenta de pago'));
     }
   },
 

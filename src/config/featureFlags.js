@@ -4,6 +4,7 @@ export const FEATURE_FLAGS = {
   cartera: true,
   usuarios: true,
   importacion: false,
+  parametrizacion: true,
 };
 
 export const DEFAULT_PRIVATE_ROUTE = '/facturas';

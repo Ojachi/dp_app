@@ -29,7 +29,7 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
   const hayFiltros = Object.values(filtros).some(valor => valor !== '');
 
   return (
-    <div className="card mb-4">
+    <div className="card dp-filter mb-4">
       <div className="card-header">
         <h6 className="card-title mb-0">
           <i className="bi bi-funnel me-2"></i>

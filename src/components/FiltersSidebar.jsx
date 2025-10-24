@@ -20,7 +20,7 @@ const FiltersSidebar = ({
 
   return (
     <>
-      {visible && <div className="filters-overlay" />}
+      {visible && <div className="filters-overlay" onClick={onClose} />}
       <aside className={`filters-sidebar${visible ? ' open' : ''}`}>
         <div className="filters-header d-flex justify-content-between align-items-center p-3">
           <strong>Filtros</strong>
@@ -34,8 +34,9 @@ const FiltersSidebar = ({
                   id={filter.id}
                   label={filter.label}
                   options={filter.options}
+                  placeholder={filter.placeholder ?? null}
                   value={filters[filter.id] || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, [filter.id]: e.target.value }))}
+                  onChange={(value) => setFilters(prev => ({ ...prev, [filter.id]: value }))}
                 />}
               {filter.type === 'input' &&
                 <Input
@@ -43,7 +44,7 @@ const FiltersSidebar = ({
                   label={filter.label}
                   type={filter.inputType}
                   value={filters[filter.id] || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, [filter.id]: e.target.value }))}
+                  onChange={(value) => setFilters(prev => ({ ...prev, [filter.id]: value }))}
                   placeholder={filter.placeholder}
                 />}
             </div>

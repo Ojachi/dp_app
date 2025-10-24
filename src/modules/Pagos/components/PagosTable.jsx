@@ -34,16 +34,26 @@ const PagosTable = ({
 
   const columns = [
     {
-      key: 'factura',
-      header: 'Factura',
+      key: 'codigo',
+      header: 'Código',
       render: (pago) => (
         <div>
           <div className="fw-medium">
-            {pago.factura_numero || pago.factura?.numero_factura || `Factura #${pago.factura}`}
+            {pago.codigo}
           </div>
           <small className="text-muted">
             Pago realizado el {formatDate(pago.fecha_pago)}
           </small>
+        </div>
+      )
+    },
+    {
+      key: 'registro',
+      header: 'Registro',
+      render: (pago) => (
+        <div>
+          <div>{formatDate(pago.fecha_registro)}</div>
+          <small className="text-muted">por {pago.usuario_nombre || 'N/D'}</small>
         </div>
       )
     },
@@ -53,6 +63,9 @@ const PagosTable = ({
       render: (pago) => (
         <div>
           <div className="fw-medium">{pago.cliente_nombre || pago.factura?.cliente?.nombre || 'N/D'}</div>
+          {pago.cliente_codigo && (
+            <small className="text-muted">Código: {pago.cliente_codigo}</small>
+          )}
           {pago.factura?.cliente?.email && (
             <small className="text-muted">{pago.factura.cliente.email}</small>
           )}
@@ -69,9 +82,13 @@ const PagosTable = ({
         const ica = Number(pago.ica || 0);
         const nota = Number(pago.nota || 0);
         const totalAplicado = valor + descuento + retencion + ica + nota;
+        const aplicado = pago.aplicado ?? (pago.estado === 'confirmado');
         return (
           <div className="text-end">
             <div className="fw-bold text-success">{formatCurrency(totalAplicado)}</div>
+            <div>
+              <span className={`badge bg-${aplicado ? 'success' : 'secondary'}`}>{aplicado ? 'Aplicado' : 'Pendiente'}</span>
+            </div>
             {(descuento || retencion || ica || nota) ? (
               <small className="text-muted d-block">
                 {valor ? `Pago ${formatCurrency(valor)}` : ''}
@@ -90,7 +107,7 @@ const PagosTable = ({
       header: 'Tipo de pago',
       render: (pago) => (
         <div className="d-flex align-items-center gap-2">
-          <span className="text-capitalize">{pago.tipo_pago || 'Sin dato'}</span>
+          <span className="text-capitalize">{pago.tipo_pago_nombre || pago.tipo_pago || 'Sin dato'}</span>
           {pago.estado && (
             <span className={`badge bg-${pago.estado === 'confirmado' ? 'success' : pago.estado === 'registrado' ? 'warning text-dark' : 'secondary'}`}>
               {pago.estado}
@@ -100,9 +117,25 @@ const PagosTable = ({
       )
     },
     {
+      key: 'cuenta',
+      header: 'Cuenta',
+      render: (pago) => pago.cuenta_nombre ? (
+        <span>{pago.cuenta_nombre}</span>
+      ) : (pago.cuenta || '—')
+    },
+    {
       key: 'comprobante',
       header: 'Comprobante',
-      render: (pago) => pago.numero_comprobante || '—',
+      render: (pago) => (
+        <div>
+          {pago.tiene_comprobante ? (
+            <span className="badge bg-info">Adjunto</span>
+          ) : '—'}
+          {pago.numero_comprobante ? (
+            <small className="text-muted d-block">Ref: {pago.numero_comprobante}</small>
+          ) : null}
+        </div>
+      ),
     },
     {
       key: 'acciones',

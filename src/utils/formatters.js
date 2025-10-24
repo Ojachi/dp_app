@@ -50,10 +50,23 @@ export const getEstadoBadge = (estado) => {
     parcial: { text: 'Pago Parcial', class: 'bg-info' },
     pagada: { text: 'Pagada', class: 'bg-success' },
     vencida: { text: 'Vencida', class: 'bg-danger' },
-    anulada: { text: 'Anulada', class: 'bg-secondary' }
+    anulada: { text: 'Anulada', class: 'bg-secondary' },
+    entregado: { text: 'Entregado', class: 'bg-success' },
+    devolucionTotal: { text: 'Devolución Total', class: 'bg-danger' }
   };
   
   return badges[estado] || { text: estado, class: 'bg-secondary' };
+};
+
+// Obtener badge de estado de entrega 
+export const getEstadoEntregaBadge = (estadoEntrega) => {
+  const badges = {
+    pendiente: { text: 'Pendiente', class: 'bg-warning text-dark' },
+    entregado: { text: 'Entregado', class: 'bg-success' },
+    devolucion_total: { text: 'Devolución Total', class: 'bg-danger' }
+  };
+
+  return badges[estadoEntrega] || { text: estadoEntrega, class: 'bg-secondary' };
 };
 
 // Obtener badge de prioridad de alerta

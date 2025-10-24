@@ -12,7 +12,8 @@ const FacturasFilters = ({
   onApplyFilters, // compat: some parents may pass onApplyFilters
   entidades,
   onClearFilters,
-  loading = false
+  loading = false,
+  headerless = false
 }) => {
   const [localFilters, setLocalFilters] = useState({
     numero_factura: '',
@@ -29,7 +30,7 @@ const FacturasFilters = ({
     saldo_pendiente: ''
   });
 
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(headerless ? false : true);
 
   useEffect(() => {
     setLocalFilters(filters);
@@ -104,46 +105,48 @@ const FacturasFilters = ({
   ).length;
 
   return (
-    <div className="card mb-3">
-      <div className="card-header">
-        <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center">
-            <h6 className="mb-0 me-3">
-              <i className="fas fa-filter me-2"></i>
-              Filtros
-            </h6>
-            {activeFiltersCount > 0 && (
-              <span className="badge bg-primary">
-                {activeFiltersCount} activos
-              </span>
-            )}
-          </div>
-          
-          <div className="btn-group btn-group-sm">
-            <button
-              className="btn btn-outline-secondary"
-              onClick={() => setCollapsed(!collapsed)}
-              disabled={loading}
-            >
-              <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
-              {collapsed ? 'Mostrar' : 'Ocultar'}
-            </button>
+    <div className="card dp-filter mb-3">
+      {!headerless && (
+        <div className="card-header">
+          <div className="d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center">
+              <h6 className="mb-0 me-3">
+                <i className="fas fa-filter me-2"></i>
+                Filtros
+              </h6>
+              {activeFiltersCount > 0 && (
+                <span className="badge bg-primary">
+                  {activeFiltersCount} activos
+                </span>
+              )}
+            </div>
             
-            {activeFiltersCount > 0 && (
+            <div className="btn-group btn-group-sm">
               <button
-                className="btn btn-outline-danger"
-                onClick={handleClearAll}
+                className="btn btn-outline-secondary"
+                onClick={() => setCollapsed(!collapsed)}
                 disabled={loading}
               >
-                <i className="fas fa-times me-1"></i>
-                Limpiar
+                <i className={`fas fa-chevron-${collapsed ? 'down' : 'up'}`}></i>
+                {collapsed ? 'Mostrar' : 'Ocultar'}
               </button>
-            )}
+              
+              {activeFiltersCount > 0 && (
+                <button
+                  className="btn btn-outline-danger"
+                  onClick={handleClearAll}
+                  disabled={loading}
+                >
+                  <i className="fas fa-times me-1"></i>
+                  Limpiar
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {!collapsed && (
+      {(!headerless && !collapsed) || (headerless && true) ? (
         <div className="card-body">
           <div className="row g-3">
             {/* Búsqueda general */}
@@ -332,7 +335,7 @@ const FacturasFilters = ({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

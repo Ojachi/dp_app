@@ -14,7 +14,6 @@ const createDefaultFormData = () => ({
   valor_pagado: '',
   tipo_pago: '',
   fecha_pago: new Date().toISOString().split('T')[0],
-  numero_comprobante: '',
   notas: '',
   tiene_nota: false,
   valor_nota: '',
@@ -22,9 +21,8 @@ const createDefaultFormData = () => ({
   descuento: '',
   retencion: '',
   ica: '',
-  cuenta_pago: '',
-  comprobante: null, // File
-  firma: null, // File (usamos mismo campo comprobante al enviar)
+  cuenta: '',
+  comprobante_b64: '', // Base64 generado desde archivo (imagen/pdf)
 });
 
 const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
@@ -34,9 +32,12 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [metodosPago, setMetodosPago] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
   const [facturasPendientes, setFacturasPendientes] = useState([]);
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  // Gestión de cuentas removida del formulario de pagos. La administración de cuentas
+  // ahora se realiza únicamente desde Parametrización > Cuentas de pago.
 
   const metodoSeleccionado = useMemo(
     () => metodosPago.find((metodo) => metodo.id === formData.tipo_pago),
@@ -45,14 +46,18 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
 
   const { user, isVendedor } = useAuth();
 
+  // Flags FE-only ya aplicados en la factura seleccionada
+  const [feYaAplicoRetencion, setFeYaAplicoRetencion] = useState(false);
+  const [feYaAplicoIca, setFeYaAplicoIca] = useState(false);
+
   const isFE = facturaSeleccionada?.tipo === 'FE';
-  const isR = facturaSeleccionada?.tipo === 'R';
-  const mostrarRetencion = (isGerente() || isVendedor()) && isFE;
-  const mostrarICA = (isGerente() || isVendedor()) && isR;
+  // FE-only: mostrar retención e ICA solo para facturas FE y si no han sido aplicadas previamente en la factura
+  const mostrarRetencion = (isGerente() || isVendedor()) && isFE && !feYaAplicoRetencion;
+  const mostrarICA = (isGerente() || isVendedor()) && isFE && !feYaAplicoIca;
   // Inferir por nombre del método si es consignación o efectivo
   const metodoNombre = (metodoSeleccionado?.nombre || '').toLowerCase();
   const esConsignacion = formData.tipo_pago === 'consignacion' || /consign/.test(metodoNombre);
-  const esEfectivo = formData.tipo_pago === 'efectivo' || /efectiv/.test(metodoNombre);
+  // const esEfectivo = formData.tipo_pago === 'efectivo' || /efectiv/.test(metodoNombre);
 
   const parseNumber = (v) => {
     const n = Number.parseFloat(String(v).replace(/,/g, '.'));
@@ -80,8 +85,7 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
         ? String(pago.valor_pagado)
         : '',
       tipo_pago: pago.tipo_pago || '',
-  fecha_pago: pago.fecha_pago ? pago.fecha_pago.split('T')[0] : createDefaultFormData().fecha_pago,
-      numero_comprobante: pago.numero_comprobante || '',
+      fecha_pago: pago.fecha_pago ? pago.fecha_pago.split('T')[0] : createDefaultFormData().fecha_pago,
       notas: pago.notas || '',
       tiene_nota: false,
       valor_nota: '',
@@ -89,24 +93,33 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       descuento: '',
       retencion: '',
       ica: '',
-      cuenta_pago: '',
-      comprobante: null,
-      firma: null,
+  cuenta: pago.cuenta || '',
+      comprobante_b64: '',
     });
     setFacturaSeleccionada(pago.factura || null);
   }, [pago]);
 
   const loadInitialData = useCallback(async () => {
     try {
-      const [metodos, facturas] = await Promise.all([
+      const [metodos, facturas, cuentasResp] = await Promise.all([
         pagosService.getMetodosPago(),
         facturasService.getFacturas({ saldo_pendiente: 'con_saldo', page_size: 100 }),
+        pagosService.getCuentas(),
       ]);
 
       const facturasList = Array.isArray(facturas?.results) ? facturas.results : (Array.isArray(facturas) ? facturas : []);
       const shouldAppendFactura = pago?.factura && !facturasList.some((item) => item.id === pago.factura.id);
 
-      setMetodosPago(metodos || []);
+      // Solo mostrar Efectivo y Consignación, pero si estamos editando un pago de otro tipo, incluirlo para no romper
+      const permitidos = new Set(['efectivo', 'consignacion']);
+      const filtrados = (metodos || []).filter((m) => permitidos.has(m.id));
+      const yaIncluido = filtrados.some((m) => m.id === (pago?.tipo_pago || ''));
+      const metodosFinal = yaIncluido || !pago?.tipo_pago
+        ? filtrados
+        : [...filtrados, (metodos || []).find((m) => m.id === pago.tipo_pago)].filter(Boolean);
+
+      setMetodosPago(metodosFinal || []);
+      setCuentas(cuentasResp || []);
       setFacturasPendientes(shouldAppendFactura ? [pago.factura, ...facturasList] : facturasList);
     } catch (error) {
       console.error('Error al cargar datos iniciales:', error);
@@ -124,11 +137,33 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
   useEffect(() => {
     if (!formData.factura_id) {
       setFacturaSeleccionada(pago?.factura || null);
+      setFeYaAplicoRetencion(false);
+      setFeYaAplicoIca(false);
       return;
     }
 
     const selected = facturasPendientes.find((factura) => String(factura.id) === formData.factura_id);
     setFacturaSeleccionada(selected || pago?.factura || null);
+    // Cargar pagos confirmados para saber si FE-only ya fue aplicado
+    const cargarPagosFactura = async (facturaId) => {
+      try {
+        const data = await pagosService.getPagosByFactura(facturaId);
+        const lista = Array.isArray(data?.pagos) ? data.pagos : (Array.isArray(data) ? data : []);
+        const confirmados = lista.filter((p) => p.estado === 'confirmado');
+        const yaRetencion = confirmados.some((p) => Number(p.retencion || 0) > 0);
+        const yaIca = confirmados.some((p) => Number(p.ica || 0) > 0);
+        setFeYaAplicoRetencion(!!yaRetencion);
+        setFeYaAplicoIca(!!yaIca);
+      } catch (e) {
+        // Si falla, conservamos flags en false para no bloquear
+        setFeYaAplicoRetencion(false);
+        setFeYaAplicoIca(false);
+      }
+    };
+    const idNum = Number.parseInt(formData.factura_id, 10);
+    if (!Number.isNaN(idNum)) {
+      cargarPagosFactura(idNum);
+    }
   }, [formData.factura_id, facturasPendientes, pago]);
 
   const formatCurrency = (amount) => {
@@ -170,10 +205,32 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    const file = files && files[0] ? files[0] : null;
-    setFormData((prev) => ({ ...prev, [name]: file }));
+  // Convertir archivo (imagen/pdf) a base64 y guardarlo en el formulario
+  const handleComprobanteFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      setFormData((prev) => ({ ...prev, comprobante_b64: '' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const result = reader.result; // data:*/*;base64,AAA...
+        if (typeof result === 'string') {
+          const comma = result.indexOf(',');
+          const base64 = comma >= 0 ? result.substring(comma + 1) : result;
+          setFormData((prev) => ({ ...prev, comprobante_b64: base64 }));
+        }
+      } catch (err) {
+        console.error('Error leyendo comprobante:', err);
+        setFormData((prev) => ({ ...prev, comprobante_b64: '' }));
+      }
+    };
+    reader.onerror = () => {
+      console.error('No se pudo leer el archivo de comprobante');
+      setFormData((prev) => ({ ...prev, comprobante_b64: '' }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const validateForm = () => {
@@ -202,9 +259,7 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       newErrors.fecha_pago = 'La fecha de pago es requerida';
     }
 
-    if (metodoSeleccionado?.requiere_referencia && !formData.numero_comprobante) {
-      newErrors.numero_comprobante = 'Ingrese la referencia del pago';
-    }
+    // Ya no se exige referencia/numero de comprobante
 
     if (formData.tiene_nota) {
       if (!formData.valor_nota || parseNumber(formData.valor_nota) <= 0) {
@@ -223,8 +278,8 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
     }
 
     if (esConsignacion) {
-      if (!formData.cuenta_pago) {
-        newErrors.cuenta_pago = 'Indique la cuenta de pago';
+      if (!formData.cuenta) {
+        newErrors.cuenta = 'Indique la cuenta de pago';
       }
     }
 
@@ -248,14 +303,13 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       notasExtras.push(`ICA: ${parseNumber(formData.ica)}`);
     }
     if (esConsignacion) {
-      if (formData.cuenta_pago) notasExtras.push(`Cuenta: ${formData.cuenta_pago}`);
+      if (formData.cuenta) notasExtras.push(`Cuenta: ${formData.cuenta}`);
     }
     const notasCompuestas = [formData.notas, ...notasExtras].filter(Boolean).join(' | ') || null;
 
     const basePayload = {
       fecha_pago: toIsoDateTime(formData.fecha_pago),
       tipo_pago: formData.tipo_pago,
-      numero_comprobante: formData.numero_comprobante || null,
       notas: notasCompuestas,
     };
 
@@ -272,9 +326,9 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
       retencion: Number.isNaN(retencion) ? 0 : retencion,
       ica: Number.isNaN(ica) ? 0 : ica,
       nota: Number.isNaN(valorNota) ? 0 : valorNota,
-      // archivos opcionales: comprobante o firma
-      ...(formData.comprobante ? { comprobante: formData.comprobante } : {}),
-      ...(formData.firma ? { comprobante: formData.firma } : {}),
+      // Adjuntos: archivo -> base64 (comprobante_b64)
+      ...(formData.comprobante_b64 ? { comprobante_b64: formData.comprobante_b64 } : {}),
+      ...(formData.cuenta ? { cuenta: formData.cuenta } : {}),
     };
   };
 
@@ -354,6 +408,11 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
                     <strong>Vence:</strong> {new Date(facturaSeleccionada.fecha_vencimiento).toLocaleDateString('es-CO')}<br />
                   </>
                 )}
+                {isFE && (feYaAplicoRetencion || feYaAplicoIca) && (
+                  <>
+                    <strong>FE-only:</strong> {feYaAplicoRetencion ? 'Retención aplicada' : ''}{feYaAplicoRetencion && feYaAplicoIca ? ' | ' : ''}{feYaAplicoIca ? 'ICA aplicado' : ''}
+                  </>
+                )}
               </small>
             </div>
           )}
@@ -424,21 +483,7 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
           {errors.fecha_pago && <div className="invalid-feedback">{errors.fecha_pago}</div>}
         </div>
 
-        <div className="col-md-6">
-          <label className="form-label">
-            Referencia / Nº comprobante{metodoSeleccionado?.requiere_referencia && <span className="text-danger">*</span>}
-          </label>
-          <input
-            type="text"
-            className={`form-control ${errors.numero_comprobante ? 'is-invalid' : ''}`}
-            name="numero_comprobante"
-            value={formData.numero_comprobante}
-            onChange={handleInputChange}
-            placeholder="Número de referencia, transacción o cheque"
-            disabled={fieldsDisabled}
-          />
-          {errors.numero_comprobante && <div className="invalid-feedback">{errors.numero_comprobante}</div>}
-        </div>
+        {/* Campo de referencia/comprobante eliminado según requerimiento */}
 
         {/* Tiene nota? */}
         <div className="col-md-4 d-flex align-items-end">
@@ -544,45 +589,43 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
           <>
             <div className="col-md-6">
               <label className="form-label">Cuenta de pago</label>
-              <input
-                type="text"
-                className={`form-control ${errors.cuenta_pago ? 'is-invalid' : ''}`}
-                name="cuenta_pago"
-                value={formData.cuenta_pago}
+              <select
+                className={`form-select ${errors.cuenta ? 'is-invalid' : ''}`}
+                name="cuenta"
+                value={formData.cuenta}
                 onChange={handleInputChange}
                 disabled={fieldsDisabled}
-              />
-              {errors.cuenta_pago && <div className="invalid-feedback">{errors.cuenta_pago}</div>}
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Comprobante de pago</label>
-              <input
-                type="file"
-                className="form-control"
-                name="comprobante"
-                accept="image/*,application/pdf"
-                onChange={handleFileChange}
-                disabled={fieldsDisabled}
-              />
+              >
+                <option value="">Seleccionar cuenta...</option>
+                {cuentas.map((c) => (
+                  <option key={c.id || c.nombre} value={c.id}>
+                    {c.nombre} {c.numero ? `- ${c.numero}` : ''}
+                  </option>
+                ))}
+              </select>
+              {errors.cuenta && <div className="invalid-feedback">{errors.cuenta}</div>}
             </div>
           </>
         )}
 
+        {/* Comprobante (imagen o PDF) opcional: se convierte a base64 y se envía como comprobante_b64 */}
+        <div className="col-md-6">
+          <label className="form-label">Comprobante (imagen o PDF) — opcional</label>
+          <input
+            type="file"
+            className="form-control"
+            name="comprobante_b64_file"
+            accept="image/*,application/pdf"
+            onChange={handleComprobanteFile}
+            disabled={fieldsDisabled}
+          />
+          {formData.comprobante_b64 && (
+            <small className="text-muted">Archivo cargado. Se guardará como base64.</small>
+          )}
+        </div>
+
         {/* Firma del cliente (Efectivo) */}
-        {esEfectivo && (
-          <div className="col-md-6">
-            <label className="form-label">Firma del cliente (imagen)</label>
-            <input
-              type="file"
-              className="form-control"
-              name="firma"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={fieldsDisabled}
-            />
-            <small className="text-muted">Se cargará como comprobante del pago.</small>
-          </div>
-        )}
+        {/* Firma/Comprobante por archivo eliminados: sólo base64 si se implementa más adelante */}
 
         <div className="col-12">
           <label className="form-label">Notas</label>
@@ -611,6 +654,8 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
           </div>
         </div>
       </div>
+
+      {/* Gestión de cuentas eliminada: selección únicamente de cuentas existentes */}
 
       <div className="d-flex justify-content-end gap-2 mt-4">
         {!isGerente() && !isEditing && (

@@ -16,12 +16,7 @@ const Sidebar = ({ isOpen = true, onClose }) => {
 
   // Definir elementos de navegación con permisos
   const navItems = [
-    FEATURE_FLAGS.dashboard && {
-      to: '/dashboard',
-      label: 'Dashboard',
-      icon: 'fas fa-tachometer-alt',
-      roles: [USER_ROLES.GERENTE, USER_ROLES.VENDEDOR, USER_ROLES.DISTRIBUIDOR]
-    },
+    // Dashboard eliminado del menú lateral: no se usa en la app
     {
       to: '/facturas',
       label: 'Facturas',
@@ -38,7 +33,7 @@ const Sidebar = ({ isOpen = true, onClose }) => {
       to: '/alertas',
       label: 'Alertas',
       icon: 'fas fa-bell',
-      roles: [USER_ROLES.GERENTE, USER_ROLES.VENDEDOR, USER_ROLES.DISTRIBUIDOR],
+      roles: [USER_ROLES.GERENTE, USER_ROLES.VENDEDOR],
       badge: contadorNuevas > 0 ? contadorNuevas : null
     },
     FEATURE_FLAGS.cartera && {
@@ -51,6 +46,12 @@ const Sidebar = ({ isOpen = true, onClose }) => {
       to: '/usuarios',
       label: 'Usuarios',
       icon: 'fas fa-users',
+      roles: [USER_ROLES.GERENTE]
+    },
+    FEATURE_FLAGS.parametrizacion && {
+      to: '/parametrizacion',
+      label: 'Parametrización',
+      icon: 'fas fa-cogs',
       roles: [USER_ROLES.GERENTE]
     },
     FEATURE_FLAGS.importacion && {

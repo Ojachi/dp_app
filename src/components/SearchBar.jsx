@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 const SearchBar = ({
   value = '',
   onChange,
+  onSearch,
   placeholder = 'Buscar...',
   disabled = false,
   size = 'md',
@@ -34,10 +35,13 @@ const SearchBar = ({
       if (onChange && localValue !== value) {
         onChange(localValue);
       }
+      if (onSearch && localValue !== value) {
+        onSearch(localValue);
+      }
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [localValue, debounceMs, onChange, value]);
+  }, [localValue, debounceMs, onChange, onSearch, value]);
 
   // Sync with external value changes
   useEffect(() => {
@@ -46,6 +50,13 @@ const SearchBar = ({
 
   const handleChange = (e) => {
     setLocalValue(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (onChange) onChange(localValue);
+      if (onSearch) onSearch(localValue);
+    }
   };
 
   const handleClear = () => {
@@ -79,6 +90,7 @@ const SearchBar = ({
         className={inputClasses}
         value={localValue}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
         {...props}

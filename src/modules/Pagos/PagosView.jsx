@@ -1,24 +1,34 @@
 /**
  * Vista principal del módulo de Pagos
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { pagosService } from '../../services/pagosService';
 import PagosTable from './components/PagosTable';
 import PagoForm from './components/PagoForm';
-import PagosFilters from './components/PagosFilters';
+// import PagosFilters from './components/PagosFilters';
 // MVP: dashboard de pagos oculto
 // import PagosDashboard from './components/PagosDashboard';
 import PagoDetalleModal from './components/PagoDetalleModal';
 import Modal from '../../components/Modal';
 import { Button } from '../../components/Button';
 import { useToast } from '../../components/Toast';
+import SearchBar from '../../components/SearchBar';
+import FiltersSidebar from '../../components/FiltersSidebar';
 
 const PagosView = () => {
   const { hasRole } = useAuth();
   const { toast } = useToast();
-  // MVP: solo listado visible
-  const [activeTab, setActiveTab] = useState('listado');
+  // Vista única (sin pestañas)
+  const initialFilters = useMemo(() => ({
+    search: '',
+    tipo_pago: '',
+    fecha_desde: '',
+    fecha_hasta: '',
+    factura_id: '',
+    monto_min: '',
+    monto_max: ''
+  }), []);
   const [pagos, setPagos] = useState([]);
   // MVP: sin estado de dashboard
   const [loading, setLoading] = useState(false);
@@ -28,7 +38,14 @@ const PagosView = () => {
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [detallePago, setDetallePago] = useState(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState(initialFilters);
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  // Métodos de pago fijos: efectivo y consignación
+  const metodosPago = useMemo(() => ([
+    { value: '', label: 'Todos los métodos' },
+    { value: 'efectivo', label: 'Efectivo' },
+    { value: 'consignacion', label: 'Consignación' },
+  ]), []);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -40,11 +57,21 @@ const PagosView = () => {
   // MVP: se omite carga de dashboard
   const loadDashboardData = useCallback(async () => {}, []);
 
+  // Ya no se cargan dinámicamente; se usan opciones fijas
+
   // Cargar pagos
   const loadPagos = useCallback(async (page = 1) => {
     try {
+      const serverFilters = {
+        search: filters.search,
+        tipo_pago: filters.tipo_pago,
+        fecha_desde: filters.fecha_desde,
+        fecha_hasta: filters.fecha_hasta,
+        factura_id: filters.factura_id,
+      };
+
       const response = await pagosService.getPagos({
-        ...filters,
+        ...serverFilters,
         page: page,
         page_size: pagination.itemsPerPage
       });
@@ -55,12 +82,28 @@ const PagosView = () => {
           ? response
           : [];
 
-      setPagos(data);
+      // Filtros sólo-frontend: monto_min / monto_max (+ fallback de búsqueda)
+      const filtered = data.filter((p) => {
+        let ok = true;
+        const monto = Number(p?.monto_total || p?.monto || 0);
+        if (filters.monto_min !== '' && !isNaN(filters.monto_min)) ok = ok && monto >= Number(filters.monto_min);
+        if (filters.monto_max !== '' && !isNaN(filters.monto_max)) ok = ok && monto <= Number(filters.monto_max);
+        if (filters.search) {
+          const s = String(filters.search).toLowerCase();
+          const hay = [p?.codigo, p?.numero_pago, p?.factura_numero, p?.cliente_nombre, p?.cliente?.nombre]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(s));
+          ok = ok && hay;
+        }
+        return ok;
+      });
+
+      setPagos(filtered);
       setPagination(prev => ({
         ...prev,
         currentPage: page,
-        totalItems: response.count || data.length || 0,
-        totalPages: Math.max(1, Math.ceil((response.count || data.length || 0) / pagination.itemsPerPage))
+        totalItems: filtered.length,
+        totalPages: Math.max(1, Math.ceil((filtered.length || 0) / pagination.itemsPerPage))
       }));
     } catch (error) {
       console.error('Error al cargar pagos:', error);
@@ -82,7 +125,7 @@ const PagosView = () => {
     };
 
     loadData();
-  }, [activeTab, filters, loadDashboardData, loadPagos]);
+  }, [filters, loadPagos]);
 
   // Manejar creación/actualización de pago
   const handlePagoSubmit = async (pagoData) => {
@@ -101,11 +144,8 @@ const PagosView = () => {
       setEditingPago(null);
       setFormLoading(false);
       
-      // Recargar datos
-      loadDashboardData();
-      if (activeTab === 'listado') {
-        loadPagos(pagination.currentPage);
-      }
+      // Recargar listado
+      loadPagos(pagination.currentPage);
 
       // Notificación de éxito
       let message = 'Pago registrado correctamente';
@@ -187,12 +227,46 @@ const PagosView = () => {
     <div className="container-fluid">
       <div className="row">
         <div className="col-12">
-          {/* Header */}
+          {/* Header (limpio, sin botón duplicado) */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2>
               <i className="fas fa-money-bill-wave me-2"></i>
               Gestión de Pagos
             </h2>
+            <div className="d-flex gap-2"></div>
+          </div>
+
+          {/* Toolbar: búsqueda visible + botón Filtros + acciones */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex align-items-center gap-2 flex-grow-1">
+              <div className="flex-grow-1" style={{ maxWidth: '620px' }}>
+                <SearchBar
+                  placeholder="Buscar por número de pago, factura, cliente..."
+                  value={filters.search}
+                  onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                />
+              </div>
+              <Button
+                variant="outline-secondary"
+                onClick={() => setShowFiltersPanel((v) => !v)}
+                className={showFiltersPanel ? 'active' : ''}
+              >
+                <i className="fas fa-filter me-1"></i>
+                Filtros
+              </Button>
+              {Object.values(filters || {}).some(v => v !== '' && v !== null && v !== undefined) && (
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => {
+                    setFilters(initialFilters);
+                    setShowFiltersPanel(false);
+                  }}
+                >
+                  <i className="fas fa-broom me-1"></i>
+                  Limpiar filtros
+                </Button>
+              )}
+            </div>
             <div className="d-flex gap-2">
               {hasRole(['gerente', 'vendedor', 'distribuidor']) && (
                 <Button
@@ -207,84 +281,41 @@ const PagosView = () => {
                   Registrar Pago
                 </Button>
               )}
-              {/* <div className="dropdown">
-                <button
-                  className="btn btn-outline-secondary dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <i className="fas fa-download me-2"></i>
-                  Exportar
-                </button>
-                <ul className="dropdown-menu">
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => handleExportReport('excel')}
-                    >
-                      <i className="fas fa-file-excel me-2"></i>
-                      Excel
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => handleExportReport('pdf')}
-                    >
-                      <i className="fas fa-file-pdf me-2"></i>
-                      PDF
-                    </button>
-                  </li>
-                </ul>
-              </div> */}
             </div>
           </div>
 
-          {/* Tabs de navegación */}
-          <div className="card">
-            <div className="card-header border-0">
-              <ul className="nav nav-tabs card-header-tabs">
-                {/* MVP: pestaña de dashboard oculta */}
-                <li className="nav-item">
-                  <button
-                    className={`nav-link ${activeTab === 'listado' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('listado')}
-                  >
-                    <i className="fas fa-list me-2"></i>
-                    Listado de Pagos
-                  </button>
-                </li>
-                {/* MVP: se elimina la pestaña de Facturas Pendientes en Pagos */}
-              </ul>
-            </div>
+          {/* Panel de filtros en Sidebar (similar a Cartera) */}
+          {showFiltersPanel && (
+            <FiltersSidebar
+              visible={true}
+              onClose={() => setShowFiltersPanel(false)}
+              filters={filters}
+              setFilters={(updater) => setFilters(prev => (typeof updater === 'function' ? updater(prev) : updater))}
+              filterConfig={[
+                { id: 'tipo_pago', label: 'Tipo de pago', type: 'select', options: metodosPago },
+                { id: 'fecha_desde', label: 'Fecha desde', type: 'input', inputType: 'date' },
+                { id: 'fecha_hasta', label: 'Fecha hasta', type: 'input', inputType: 'date' },
+                { id: 'factura_id', label: 'ID de factura', type: 'input', inputType: 'number' },
+                { id: 'monto_min', label: 'Monto mínimo', type: 'input', inputType: 'number', placeholder: '0' },
+                { id: 'monto_max', label: 'Monto máximo', type: 'input', inputType: 'number', placeholder: '999999' },
+              ]}
+              onApply={() => {
+                handleFiltersChange(filters);
+                setShowFiltersPanel(false);
+              }}
+            />
+          )}
 
-            <div className="card-body p-0">
-              {/* Dashboard Tab */}
-              {/* MVP: no dashboard */}
-
-              {/* Listado Tab */}
-              {activeTab === 'listado' && (
-                <div>
-                  <PagosFilters
-                    filters={filters}
-                    onFiltersChange={handleFiltersChange}
-                    onReset={() => setFilters({})}
-                  />
-                  <PagosTable
-                    pagos={pagos}
-                    loading={loading}
-                    pagination={pagination}
-                    onPageChange={loadPagos}
-                    onView={handleViewPago}
-                    onEdit={hasRole('gerente') ? handleEditPago : null}
-                    onDelete={hasRole('gerente') ? handleDeletePago : null}
-                  />
-                </div>
-              )}
-
-              {/* MVP: sin pestaña de Facturas Pendientes */}
-            </div>
-          </div>
+          {/* Tabla de resultados */}
+          <PagosTable
+            pagos={pagos}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={loadPagos}
+            onView={handleViewPago}
+            onEdit={hasRole('gerente') ? handleEditPago : null}
+            onDelete={hasRole('gerente') ? handleDeletePago : null}
+          />
         </div>
       </div>
 

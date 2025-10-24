@@ -8,6 +8,7 @@ import { Select } from '../../../components/Select';
 import { DatePicker } from '../../../components/DatePicker';
 import { Button } from '../../../components/Button';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import { entidadesService } from '../../../services/entidadesService';
 
 const FacturaForm = ({
   factura = null,
@@ -32,15 +33,11 @@ const FacturaForm = ({
   });
   
   // Productos/Servicios ya no se manejan en este MVP
-
-  const [clienteNuevo, setClienteNuevo] = useState({
-    nombre: '',
-    telefono: '',
-    direccion: '',
-    email: ''
-  });
-
-  const [mostrarClienteForm, setMostrarClienteForm] = useState(false);
+  // Gestión inline de clientes/sucursales eliminada: selección únicamente de existentes.
+  // Sucursales del cliente seleccionado
+  const [sucursales, setSucursales] = useState([]);
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState('');
+  
   // Cálculo automático eliminado: valor_total lo ingresa el usuario
 
   useEffect(() => {
@@ -57,8 +54,11 @@ const FacturaForm = ({
         observaciones: factura.observaciones || '',
         productos: [] 
       });
+      // Preseleccionar sucursal si viene en la factura
+      const csId = factura.cliente_sucursal?.id || factura.cliente_sucursal_id || '';
+      setSucursalSeleccionada(csId ? String(csId) : '');
     } else {
-      // Valores por defecto para nueva factura
+  // Valores por defecto para nueva factura
       const hoy = new Date().toISOString().split('T')[0];
       const vencimiento = new Date();
       vencimiento.setDate(vencimiento.getDate() + 30);
@@ -70,6 +70,25 @@ const FacturaForm = ({
       }));
     }
   }, [factura]);
+
+  // Cargar sucursales cuando cambie el cliente seleccionado
+  useEffect(() => {
+    const loadSucursales = async (clienteId) => {
+      try {
+        const data = await entidadesService.sucursales.getByCliente(clienteId);
+        const toArray = (d) => (Array.isArray(d) ? d : (d && Array.isArray(d.results) ? d.results : []));
+        setSucursales(toArray(data));
+      } catch (e) {
+        setSucursales([]);
+      }
+    };
+    if (formData.cliente_id) {
+      loadSucursales(formData.cliente_id);
+    } else {
+      setSucursales([]);
+      setSucursalSeleccionada('');
+    }
+  }, [formData.cliente_id]);
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({
@@ -86,18 +105,19 @@ const FacturaForm = ({
       toast.warning('Por favor complete los campos requeridos');
       return;
     }
-    // Validación de cliente: permitir cliente nuevo
-    if (!mostrarClienteForm && !formData.cliente_id) {
-      toast.warning('Seleccione un cliente o cree uno nuevo');
+    // Validación de cliente: solo selección de existente
+    if (!formData.cliente_id) {
+      toast.warning('Seleccione un cliente');
       return;
     }
-    if (mostrarClienteForm && !clienteNuevo.nombre) {
-      toast.warning('Ingrese el nombre del nuevo cliente');
+    // Validación de sucursal: debe seleccionar una existente
+    if (!sucursalSeleccionada) {
+      toast.warning('Seleccione una sucursal del cliente');
       return;
     }
 
     const toInt = (v) => (v === '' || v === null || v === undefined ? null : parseInt(v, 10));
-    const dataToSubmit = {
+    let dataToSubmit = {
       numero_factura: formData.numero_factura,
       cliente_id: toInt(formData.cliente_id),
       vendedor_id: toInt(formData.vendedor_id),
@@ -109,10 +129,9 @@ const FacturaForm = ({
       observaciones: formData.observaciones || ''
     };
 
-    // Adjuntar datos de nuevo cliente si aplica
-    if (mostrarClienteForm) {
-      dataToSubmit.cliente_nuevo = clienteNuevo;
-      dataToSubmit.cliente_id = null;
+    // Adjuntar sucursal seleccionada
+    if (sucursalSeleccionada) {
+      dataToSubmit.cliente_sucursal_id = toInt(sucursalSeleccionada);
     }
 
     onSave(dataToSubmit);
@@ -122,32 +141,32 @@ const FacturaForm = ({
 
   const clientesOptions = [
     { value: '', label: 'Seleccionar cliente...' },
-    { value: 'nuevo', label: '+ Crear nuevo cliente' },
     ...asArray(entidades?.clientes).map(cliente => ({
       value: String(cliente.id),
       label: `${cliente.nombre} - ${cliente.telefono || 'Sin teléfono'}`
     }))
   ];
 
-  const vendedoresOptions = [
-    { value: '', label: 'Seleccionar vendedor...' },
-    ...asArray(entidades?.vendedores).map(vendedor => ({
-      value: String(vendedor.usuario?.id ?? vendedor.id),
-      label: vendedor.usuario?.full_name ?? vendedor.nombre ?? vendedor.usuario_nombre ?? 'Vendedor'
-    }))
-  ];
+  // Selects de Vendedor/Distribuidor eliminados del UI; asignación es automática por Población
 
-  const distribuidoresOptions = [
-    { value: '', label: 'Seleccionar distribuidor...' },
-    ...asArray(entidades?.distribuidores).map(distribuidor => ({
-      value: String(distribuidor.usuario?.id ?? distribuidor.id),
-      label: distribuidor.usuario?.full_name ?? distribuidor.nombre ?? distribuidor.usuario_nombre ?? 'Distribuidor'
-    }))
-  ];
+  // Sin creación inline, no se requieren opciones de poblaciones aquí
 
   if (loading) {
     return <LoadingSpinner message="Cargando formulario..." />;
   }
+
+  // Determinar población seleccionada (para mostrar asignación automática)
+  const selectedPoblacionId = (() => {
+    if (sucursalSeleccionada) {
+      const suc = sucursales.find(s => String(s.id) === String(sucursalSeleccionada));
+      return suc?.poblacion ? String(suc.poblacion) : '';
+    }
+    return '';
+  })();
+
+  const selectedPoblacion = asArray(entidades?.poblaciones).find(p => String(p.id) === String(selectedPoblacionId));
+  const autoVendedorNombre = selectedPoblacion?.vendedor_nombre || 'Sin vendedor';
+  const autoDistribuidorNombre = selectedPoblacion?.distribuidor_nombre || 'Sin distribuidor';
 
   return (
     <form onSubmit={handleSubmit} className="row g-3">
@@ -161,14 +180,20 @@ const FacturaForm = ({
 
       <div className="col-md-6">
         <Input
-          label="Número de Factura *"
+          label="Número (solo dígitos) *"
           type="text"
           value={formData.numero_factura}
-          onChange={(value) => handleInputChange('numero_factura', value)}
+          onChange={(value) => {
+            const onlyDigits = String(value || '').replace(/\D/g, '');
+            handleInputChange('numero_factura', onlyDigits);
+          }}
           error={errors.numero_factura}
           required
           disabled={loading}
         />
+        <div className="form-text">
+          Código resultante: <strong>{`${formData.tipo || 'FE'}-${String(formData.numero_factura || '').padStart(3, '0')}`}</strong>
+        </div>
       </div>
 
       <div className="col-md-3">
@@ -197,15 +222,9 @@ const FacturaForm = ({
       <div className="col-md-6">
         <Select
           label="Cliente *"
-          value={mostrarClienteForm ? 'nuevo' : formData.cliente_id}
+          value={formData.cliente_id}
           onChange={(value) => {
-            if (value === 'nuevo') {
-              setMostrarClienteForm(true);
-              handleInputChange('cliente_id', '');
-            } else {
-              setMostrarClienteForm(false);
-              handleInputChange('cliente_id', value);
-            }
+            handleInputChange('cliente_id', value);
           }}
           options={clientesOptions}
           placeholder={null}
@@ -214,84 +233,56 @@ const FacturaForm = ({
           disabled={loading}
         />
       </div>
-
-      {/* Formulario de cliente nuevo */}
-      {mostrarClienteForm && (
-        <>
-          <div className="col-12">
-            <div className="card bg-light">
-              <div className="card-body">
-                <h6 className="card-title">
-                  <i className="fas fa-user-plus me-2"></i>
-                  Datos del Nuevo Cliente
-                </h6>
-                <div className="row g-2">
-                  <div className="col-md-6">
-                    <Input
-                      label="Nombre *"
-                      type="text"
-                      value={clienteNuevo.nombre}
-                      onChange={(value) => setClienteNuevo(prev => ({ ...prev, nombre: value }))}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="col-md-3">
-                    <Input
-                      label="Teléfono"
-                      type="tel"
-                      value={clienteNuevo.telefono}
-                      onChange={(value) => setClienteNuevo(prev => ({ ...prev, telefono: value }))}
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="col-md-3">
-                    <Input
-                      label="Email"
-                      type="email"
-                      value={clienteNuevo.email}
-                      onChange={(value) => setClienteNuevo(prev => ({ ...prev, email: value }))}
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="col-12">
-                    <Input
-                      label="Dirección"
-                      type="text"
-                      value={clienteNuevo.direccion}
-                      onChange={(value) => setClienteNuevo(prev => ({ ...prev, direccion: value }))}
-                      disabled={loading}
-                    />
-                  </div>
+      {/* Sucursal del cliente */}
+      {formData.cliente_id && (
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body">
+              <h6 className="card-title mb-3">
+                <i className="fas fa-code-branch me-2"></i>
+                Sucursal del Cliente
+              </h6>
+              <div className="row g-2">
+                <div className="col-md-6">
+                  <Select
+                    label="Seleccionar sucursal"
+                    value={sucursalSeleccionada || ''}
+                    onChange={(value) => setSucursalSeleccionada(value)}
+                    options={[
+                      { value: '', label: 'Seleccionar sucursal...' },
+                      ...sucursales.map(s => ({
+                        value: String(s.id),
+                        label: `${s.codigo} - ${s.poblacion_nombre || s.poblacion?.nombre || ''}`.trim()
+                      }))
+                    ]}
+                    placeholder={null}
+                    disabled={loading}
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      <div className="col-md-3">
-        <Select
-          label="Vendedor"
-          value={formData.vendedor_id}
-          onChange={(value) => handleInputChange('vendedor_id', value)}
-          options={vendedoresOptions}
-          placeholder={null}
-          error={errors.vendedor_id}
-          disabled={loading}
-        />
-      </div>
-
-      <div className="col-md-3">
-        <Select
-          label="Distribuidor"
-          value={formData.distribuidor_id}
-          onChange={(value) => handleInputChange('distribuidor_id', value)}
-          options={distribuidoresOptions}
-          placeholder={null}
-          error={errors.distribuidor_id}
-          disabled={loading}
-        />
+      {/* Asignación automática por Población (informativo) */}
+      <div className="col-md-6">
+        <div className="card border-0 bg-light h-100">
+          <div className="card-body py-2">
+            <div className="d-flex align-items-center mb-1">
+              <i className="fas fa-user-check me-2 text-muted"></i>
+              <small className="text-muted">Asignación automática por Población</small>
+            </div>
+            <div className="row g-2">
+              <div className="col-md-6">
+                <div className="form-text mb-0"><strong>Vendedor:</strong> {autoVendedorNombre}</div>
+              </div>
+              <div className="col-md-6">
+                <div className="form-text mb-0"><strong>Distribuidor:</strong> {autoDistribuidorNombre}</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Selección de tipo de factura */}

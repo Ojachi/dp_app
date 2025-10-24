@@ -2,7 +2,7 @@
  * Tabla de facturas con paginación y acciones
  */
 import React from 'react';
-import { formatCurrency, formatDate, getEstadoBadge, getDiasVencimiento } from '../../../utils/formatters';
+import { formatCurrency, formatDate, getEstadoBadge, getDiasVencimiento, getEstadoEntregaBadge } from '../../../utils/formatters';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { Pagination } from '../../../components/Pagination';
 
@@ -15,7 +15,8 @@ const FacturasTable = ({
   canEdit = false,
   canDelete = false,
   loading = false,
-  error = null
+  error = null,
+  isDistribuidor = false
 }) => {
   
   if (loading) {
@@ -63,13 +64,16 @@ const FacturasTable = ({
             <thead className="bg-light">
               <tr>
                 <th>Número</th>
+                <th>Código Cliente</th>
                 <th>Cliente</th>
+                <th>Condición</th>
                 <th>Vendedor</th>
                 <th>Distribuidor</th>
                 <th>Valor Total</th>
                 <th>Saldo</th>
                 <th>Estado</th>
-                <th>Vencimiento</th>
+                {!isDistribuidor && <th>Vencimiento</th>}
+                <th>Entrega</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -77,7 +81,8 @@ const FacturasTable = ({
               {facturas.map((factura) => {
                 const estadoBadge = getEstadoBadge(factura.estado);
                 const diasVencimiento = getDiasVencimiento(factura.fecha_vencimiento);
-                
+                const estadoEntregaBadge = getEstadoEntregaBadge(factura.estado_entrega);
+
                 return (
                   <tr key={factura.id} className="align-middle">
                     <td>
@@ -88,7 +93,10 @@ const FacturasTable = ({
                         {formatDate(factura.fecha_emision)}
                       </small>
                     </td>
-                    
+                    <td>
+                      <span>{factura.cliente_codigo || '-'}</span>
+                    </td>
+
                     <td>
                       <div className="fw-medium">
                         {factura.cliente_nombre || 'Sin cliente'}
@@ -99,6 +107,9 @@ const FacturasTable = ({
                           {factura.cliente_telefono}
                         </small>
                       )}
+                    </td>
+                    <td>
+                      <span>{factura.condicion_pago || '-'}</span>
                     </td>
                     
                     <td>
@@ -136,6 +147,7 @@ const FacturasTable = ({
                       </span>
                     </td>
                     
+                    {!isDistribuidor && (
                     <td>
                       <div>
                         {formatDate(factura.fecha_vencimiento)}
@@ -153,6 +165,13 @@ const FacturasTable = ({
                           }
                         </small>
                       )}
+                    </td>
+                    )}
+
+                    <td>
+                      <span className={`badge ${estadoEntregaBadge.class}`}>
+                        {estadoEntregaBadge.text} 
+                      </span>
                     </td>
                     
                     <td>

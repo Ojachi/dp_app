@@ -1,0 +1,84 @@
+/*
+  UI theme to standardize visuals across modules (Facturas, Pagos, Usuarios, Cartera)
+  - Non-invasive: only applies when views/components use .dp-* classes, plus light table polish
+*/
+
+:root {
+  --dp-card-bg: #ffffff;
+  --dp-card-border: #e5e7eb; /* gray-200 */
+  --dp-card-radius: 12px;
+  --dp-card-shadow: 0 1px 2px rgba(16,24,40,.06);
+  --dp-header-bg: #f8fafc;  /* gray-50 */
+  --dp-header-color: #111827; /* gray-900 */
+  --dp-muted: #6b7280; /* gray-500 */
+}
+
+/* Card primitives */
+.dp-card {
+  background: var(--dp-card-bg);
+  border: 1px solid var(--dp-card-border);
+  border-radius: var(--dp-card-radius);
+  box-shadow: var(--dp-card-shadow);
+}
+.dp-card + .dp-card { margin-top: 1rem; }
+
+.dp-card-header {
+  background: var(--dp-header-bg);
+  color: var(--dp-header-color);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dp-card-border);
+  border-top-left-radius: var(--dp-card-radius);
+  border-top-right-radius: var(--dp-card-radius);
+}
+.dp-card-body { padding: 16px; }
+
+/* Filters: consistent wrapper no matter each module’s markup */
+.dp-filter { 
+  border-radius: var(--dp-card-radius);
+}
+.dp-filter.dp-card { /* when used standalone (Pagos) */
+  /* already inherits card look from .dp-card */
+}
+.dp-filter .card-header,
+.dp-filter .dp-card-header {
+  background: var(--dp-header-bg);
+  border-bottom: 1px solid var(--dp-card-border);
+}
+.dp-filter .card-body,
+.dp-filter .dp-card-body {
+  padding: 16px;
+}
+.dp-filter .form-control,
+.dp-filter .form-select {
+  border-radius: 8px;
+  height: 40px;
+}
+.dp-filter .btn { border-radius: 8px; }
+
+/* Table polish (applies to shared Table.jsx output) */
+.table-responsive {
+  border: 1px solid var(--dp-card-border);
+  border-radius: var(--dp-card-radius);
+  background: var(--dp-card-bg);
+  box-shadow: var(--dp-card-shadow);
+}
+.table thead.table-light {
+  background-color: var(--dp-header-bg) !important;
+  color: #374151; /* gray-700 */
+}
+.table thead th {
+  font-weight: 600;
+}
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
+.table-hover tbody tr:hover {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* Utility: consistent section titles if needed */
+.dp-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}

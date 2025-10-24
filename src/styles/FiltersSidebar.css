@@ -14,6 +14,15 @@
 .filters-sidebar.open {
   right: 0;
 }
+.filters-header {
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(0,0,0,0.075);
+}
+.filters-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0; /* importante para que flex permita scroll */
+}
 .filters-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -21,4 +30,10 @@
   height: 100vh;
   background: rgba(0,0,0,0.18);
   z-index: 1069;
+}
+
+@media (max-width: 576px) {
+  .filters-sidebar {
+    width: 85vw;
+  }
 }

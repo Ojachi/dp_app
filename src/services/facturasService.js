@@ -77,6 +77,16 @@ export const facturasService = {
     }
   },
 
+  // Actualización parcial (PATCH): útil para estado_entrega u observaciones
+  async patchFactura(id, partialData) {
+    try {
+      const response = await apiClient.patch(`/facturas/${id}/`, partialData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Error al actualizar parcialmente la factura');
+    }
+  },
+
   // Eliminar factura
   async deleteFactura(id) {
     try {

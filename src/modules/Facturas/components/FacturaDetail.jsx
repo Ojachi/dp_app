@@ -6,6 +6,9 @@ import { formatCurrency, formatDate, getEstadoBadge, getDiasVencimiento } from '
 import { Button } from '../../../components/Button';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { pagosService } from '../../../services/pagosService';
+import { facturasService } from '../../../services/facturasService';
+import { Select } from '../../../components/Select';
+import { useAuth } from '../../../context/AuthContext';
 
 const FacturaDetail = ({
   factura,
@@ -15,11 +18,15 @@ const FacturaDetail = ({
   canEdit = false,
   canDelete = false,
   canViewPayments = false,
+  canEditEntrega = false,
   loading = false
 }) => {
   const [pagos, setPagos] = useState([]);
   const [loadingPagos, setLoadingPagos] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [updatingEntrega, setUpdatingEntrega] = useState(false);
+  const [estadoEntrega, setEstadoEntrega] = useState(factura?.estado_entrega || 'pendiente');
+  const { isDistribuidor } = useAuth();
 
   const loadPagos = useCallback(async () => {
     if (!factura?.id) return;
@@ -40,6 +47,10 @@ const FacturaDetail = ({
       loadPagos();
     }
   }, [factura, canViewPayments, activeTab, loadPagos]);
+
+  useEffect(() => {
+    setEstadoEntrega(factura?.estado_entrega || 'pendiente');
+  }, [factura]);
 
   if (loading || !factura) {
     return <LoadingSpinner message="Cargando detalles..." />;
@@ -203,6 +214,11 @@ const FacturaDetail = ({
                       <div>{factura.cliente.direccion}</div>
                     </div>
                   )}
+
+                  <div className="mb-2">
+                    <label className="form-label text-muted">Código sucursal:</label>
+                    <div>{factura.cliente_codigo || '-'}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -222,10 +238,12 @@ const FacturaDetail = ({
                     <div className="fw-bold">{formatDate(factura.fecha_emision)}</div>
                   </div>
                   
-                  <div className="mb-3">
-                    <label className="form-label text-muted">Fecha de Vencimiento:</label>
-                    <div className="fw-bold">{formatDate(factura.fecha_vencimiento)}</div>
-                  </div>
+                  {!isDistribuidor() && (
+                    <div className="mb-3">
+                      <label className="form-label text-muted">Fecha de Vencimiento:</label>
+                      <div className="fw-bold">{formatDate(factura.fecha_vencimiento)}</div>
+                    </div>
+                  )}
                   
                   <div className="mb-3">
                     <label className="form-label text-muted">Vendedor:</label>
@@ -235,6 +253,57 @@ const FacturaDetail = ({
                   <div className="mb-3">
                     <label className="form-label text-muted">Distribuidor:</label>
                     <div>{factura.distribuidor?.full_name || 'No asignado'}</div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label text-muted">Condición de Pago:</label>
+                    <div>{factura.condicion_pago || '-'}</div>
+                  </div>
+
+                  {/* Estado de entrega */}
+                  <div className="mb-2">
+                    <label className="form-label text-muted d-block">Estado de Entrega:</label>
+                    <div className="d-flex align-items-center gap-2">
+                      <div style={{minWidth: 260}}>
+                        <Select
+                          value={estadoEntrega}
+                          onChange={(v) => setEstadoEntrega(v)}
+                          options={[
+                            { value: 'pendiente', label: 'Pendiente' },
+                            { value: 'entregado', label: 'Entregado' },
+                            { value: 'devolucion_total', label: 'Devolución total' }
+                          ]}
+                          placeholder={null}
+                          disabled={updatingEntrega || !(canEditEntrega || canEdit || factura?.puede_editar_entrega)}
+                        />
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        loading={updatingEntrega}
+                        disabled={updatingEntrega || !(canEditEntrega || canEdit || factura?.puede_editar_entrega)}
+                        onClick={async () => {
+                          try {
+                            setUpdatingEntrega(true);
+                            const updated = await facturasService.patchFactura(factura.id, { estado_entrega: estadoEntrega });
+                            // idealmente levantar un callback para refrescar; por ahora sincronizamos localmente
+                            factura.estado_entrega = updated.estado_entrega || estadoEntrega;
+                          } catch (e) {
+                            console.error('Error actualizando estado de entrega:', e);
+                          } finally {
+                            setUpdatingEntrega(false);
+                          }
+                        }}
+                      >
+                        <i className="fas fa-save me-1"></i>
+                        Guardar
+                      </Button>
+                    </div>
+                    {factura.entrega_actualizado && (
+                      <small className="text-muted d-block mt-1">
+                        Última actualización: {formatDate(factura.entrega_actualizado)} {factura.entrega_actualizado_por ? `por ${factura.entrega_actualizado_por}` : ''}
+                      </small>
+                    )}
                   </div>
                 </div>
               </div>

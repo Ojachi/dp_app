@@ -15,7 +15,8 @@ const UsuariosList = ({
   onEditar,
   onEliminar,
   onToggleStatus,
-  onResetPassword
+  onResetPassword,
+  currentUserId
 }) => {
 
   // Función para obtener el badge de rol
@@ -139,6 +140,7 @@ const UsuariosList = ({
             variant={usuario.is_active ? "outline-warning" : "outline-success"}
             size="sm"
             onClick={() => onToggleStatus(usuario.id, !usuario.is_active)}
+            disabled={usuario.id === currentUserId}
             title={usuario.is_active ? "Desactivar" : "Activar"}
           >
             <i className={`fas fa-${usuario.is_active ? 'pause' : 'play'}`}></i>
@@ -161,6 +163,7 @@ const UsuariosList = ({
               size="sm"
               onClick={() => onEliminar(usuario.id)}
               title="Eliminar usuario"
+              disabled={usuario.id === currentUserId}
             >
               <i className="fas fa-user-minus"></i>
             </Button>

@@ -11,10 +11,12 @@ import PagosView from '../modules/Pagos/PagosView';
 import DashboardView from '../modules/Dashboard/DashboardView';
 import CarteraView from '../modules/Cartera/CarteraView';
 import UsuariosView from '../modules/Usuarios/UsuariosView';
+import PoblacionesAsignacionView from '../modules/Parametrizacion/components/PoblacionesAsignacionView';
 import ImportacionView from '../modules/Importacion/ImportacionView';
 import AlertasView from '../modules/Alertas/AlertasView';
 import { USER_ROLES } from '../utils/constants';
 import { FEATURE_FLAGS, DEFAULT_PRIVATE_ROUTE } from '../config/featureFlags';
+import ParametrizacionView from '../modules/Parametrizacion/ParametrizacionView';
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -45,7 +47,7 @@ const AppRoutes = () => {
     FEATURE_FLAGS.alertas && {
       path: '/alertas',
       element: <AlertasView />,
-      roles: null,
+      roles: [USER_ROLES.GERENTE, USER_ROLES.VENDEDOR],
     },
     FEATURE_FLAGS.cartera && {
       path: '/cartera',
@@ -57,9 +59,19 @@ const AppRoutes = () => {
       element: <UsuariosView />,
       roles: [USER_ROLES.GERENTE],
     },
+    {
+      path: '/poblaciones',
+      element: <PoblacionesAsignacionView />,
+      roles: [USER_ROLES.GERENTE],
+    },
     FEATURE_FLAGS.importacion && {
       path: '/importacion',
       element: <ImportacionView />,
+      roles: [USER_ROLES.GERENTE],
+    },
+    FEATURE_FLAGS.parametrizacion && {
+      path: '/parametrizacion',
+      element: <ParametrizacionView />,
       roles: [USER_ROLES.GERENTE],
     },
   ].filter(Boolean);

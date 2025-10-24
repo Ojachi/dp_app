@@ -45,7 +45,6 @@ const UsuariosView = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [usuarioPassword, setUsuarioPassword] = useState(null);
-
   // Cargar datos iniciales
   useEffect(() => {
     if (vista === 'lista') {
@@ -118,8 +117,11 @@ const UsuariosView = () => {
     try {
       await eliminarUsuario(id);
       setSelectedUsuarios(prev => prev.filter(usuarioId => usuarioId !== id));
+      toast.success('Usuario desactivado');
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
+      const msg = error?.response?.data?.detail || error?.message || 'No se pudo desactivar el usuario';
+      toast.error(msg);
     }
   };
 
@@ -131,8 +133,11 @@ const UsuariosView = () => {
       if (vista === 'lista') {
         loadUsuarios(filtros);
       }
+      toast.success(is_active ? 'Usuario activado' : 'Usuario desactivado');
     } catch (error) {
       console.error('Error al cambiar estado:', error);
+      const msg = error?.response?.data?.is_active?.[0] || error?.response?.data?.is_active || error?.response?.data?.detail || error?.message || 'No se pudo cambiar el estado';
+      toast.error(msg);
     }
   };
 
@@ -285,6 +290,7 @@ const UsuariosView = () => {
             onEliminar={handleEliminarUsuario}
             onToggleStatus={handleToggleStatus}
             onResetPassword={handleResetPassword}
+            currentUserId={user ? user.id : null}
           />
         </>
       )}
