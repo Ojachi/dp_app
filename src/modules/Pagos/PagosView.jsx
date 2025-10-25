@@ -6,9 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { pagosService } from '../../services/pagosService';
 import PagosTable from './components/PagosTable';
 import PagoForm from './components/PagoForm';
-// import PagosFilters from './components/PagosFilters';
-// MVP: dashboard de pagos oculto
-// import PagosDashboard from './components/PagosDashboard';
 import PagoDetalleModal from './components/PagoDetalleModal';
 import Modal from '../../components/Modal';
 import { Button } from '../../components/Button';
@@ -211,17 +208,6 @@ const PagosView = () => {
     setFilters(newFilters);
     setPagination({ ...pagination, currentPage: 1 });
   };
-
-  // Exportar reporte
-  // const handleExportReport = async (formato) => {
-  //   try {
-  //     await pagosService.exportarReporte(filters, formato);
-  //     toast.success('Exportación iniciada');
-  //   } catch (error) {
-  //     console.error('Error al exportar reporte:', error);
-  //     toast.error('Error al exportar el reporte: ' + (error.message || 'Ocurrió un error'));
-  //   }
-  // };
 
   return (
     <div className="container-fluid">

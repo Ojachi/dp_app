@@ -111,6 +111,24 @@ const FacturasView = () => {
     }
   };
 
+  // Callback cuando un detalle de factura se actualiza (ej. estado_entrega)
+  const handleFacturaUpdated = async (partialUpdate) => {
+    try {
+      // Refrescar lista general para reflejar cambios (estado, entrega)
+      await refreshFacturas();
+      // Si estamos viendo el detalle, recargar la factura actualizada desde backend
+      if (selectedFactura?.id) {
+        const data = await facturasService.getFacturaById(selectedFactura.id);
+        setSelectedFactura(data);
+      } else if (partialUpdate?.id) {
+        const data = await facturasService.getFacturaById(partialUpdate.id);
+        setSelectedFactura(data);
+      }
+    } catch (e) {
+      console.error('Error refrescando factura actualizada:', e);
+    }
+  };
+
   // Crear nueva factura
   const handleCreateFactura = async () => {
     if (!isGerente()) {
@@ -207,7 +225,7 @@ const FacturasView = () => {
       variant: type
     });
     setShowModal(true);
-  };
+    };
 
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
@@ -230,6 +248,7 @@ const FacturasView = () => {
             onEdit={() => handleEditFactura(selectedFactura)}
             onDelete={() => handleDeleteFactura(selectedFactura)}
             onClose={() => handleViewChange('list')}
+            onUpdated={handleFacturaUpdated}
             canEdit={isGerente()}
             canDelete={isGerente()}
             canViewPayments={isGerente() || isDistribuidor() || (isVendedor && isVendedor())}

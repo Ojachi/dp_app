@@ -96,7 +96,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           }));
         }
       } catch (error) {
-        console.error('Error validando email:', error);
+        
       } finally {
         setValidatingEmail(false);
       }
@@ -116,7 +116,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
           }));
         }
       } catch (error) {
-        console.error('Error validando username:', error);
+        
       } finally {
         setValidatingUsername(false);
       }
@@ -195,7 +195,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
 
       await onSubmit(dataToSubmit);
     } catch (error) {
-      console.error('Error al enviar formulario:', error);
+      
       setErrors({
         submit: 'Error al guardar el usuario. Por favor, intente nuevamente.'
       });
@@ -240,7 +240,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
         {/* Nombres */}
         <div className="col-md-6">
           <Input
-            label="Nombre *"
+            label="Nombre"
             value={formData.first_name}
             onChange={(val) => handleChange('first_name', val)}
             placeholder="Juan"
@@ -251,7 +251,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
 
         <div className="col-md-6">
           <Input
-            label="Apellido *"
+            label="Apellido"
             value={formData.last_name}
             onChange={(val) => handleChange('last_name', val)}
             placeholder="Pérez"
@@ -266,7 +266,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
             <div className="col-md-6">
               <Input
                 type="password"
-                label="Contraseña *"
+                label="Contraseña"
                 value={formData.password}
                 onChange={(val) => handleChange('password', val)}
                 placeholder="Mínimo 6 caracteres"
@@ -278,7 +278,7 @@ const UsuarioForm = ({ usuario, onSubmit, onCancel }) => {
             <div className="col-md-6">
               <Input
                 type="password"
-                label="Confirmar Contraseña *"
+                label="Confirmar Contraseña"
                 value={formData.confirm_password}
                 onChange={(val) => handleChange('confirm_password', val)}
                 placeholder="Repetir contraseña"

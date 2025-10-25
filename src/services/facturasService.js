@@ -95,15 +95,5 @@ export const facturasService = {
     } catch (error) {
       throw new Error('Error al eliminar la factura');
     }
-  },
-
-  // Obtener dashboard de facturas (solo gerentes)
-  async getDashboard() {
-    try {
-      const response = await apiClient.get('/facturas/dashboard/');
-      return response.data;
-    } catch (error) {
-      throw new Error('Error al obtener dashboard');
-    }
   }
 };

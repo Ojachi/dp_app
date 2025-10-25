@@ -8,11 +8,9 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import LoginView from '../components/auth/LoginView';
 import FacturasView from '../modules/Facturas/FacturasView';
 import PagosView from '../modules/Pagos/PagosView';
-import DashboardView from '../modules/Dashboard/DashboardView';
 import CarteraView from '../modules/Cartera/CarteraView';
 import UsuariosView from '../modules/Usuarios/UsuariosView';
 import PoblacionesAsignacionView from '../modules/Parametrizacion/components/PoblacionesAsignacionView';
-import ImportacionView from '../modules/Importacion/ImportacionView';
 import AlertasView from '../modules/Alertas/AlertasView';
 import { USER_ROLES } from '../utils/constants';
 import { FEATURE_FLAGS, DEFAULT_PRIVATE_ROUTE } from '../config/featureFlags';
@@ -24,11 +22,6 @@ const AppRoutes = () => {
   const defaultDestination = DEFAULT_PRIVATE_ROUTE;
 
   const protectedRoutes = [
-    FEATURE_FLAGS.dashboard && {
-      path: '/dashboard',
-      element: <DashboardView />,
-      roles: null,
-    },
     {
       path: '/facturas',
       element: <FacturasView />,
@@ -62,11 +55,6 @@ const AppRoutes = () => {
     {
       path: '/poblaciones',
       element: <PoblacionesAsignacionView />,
-      roles: [USER_ROLES.GERENTE],
-    },
-    FEATURE_FLAGS.importacion && {
-      path: '/importacion',
-      element: <ImportacionView />,
       roles: [USER_ROLES.GERENTE],
     },
     FEATURE_FLAGS.parametrizacion && {

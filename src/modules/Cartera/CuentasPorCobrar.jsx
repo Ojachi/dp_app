@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useToast } from '../../components/Toast';
 import SearchBar from '../../components/SearchBar';
 import FiltersSidebar from '../../components/FiltersSidebar';
 import Table from '../../components/Table';
@@ -12,11 +11,8 @@ const CuentasPorCobrar = ({
   loading,
   actualizarFiltros,
   limpiarFiltros,
-  cambiarPagina,
-  onVerDetalle,
-  enviarEstadoCuenta
+  cambiarPagina
 }) => {
-  const { toast } = useToast();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCuentas, setSelectedCuentas] = useState([]);
   const hasActiveFilters = useMemo(() => {
@@ -71,9 +67,6 @@ const CuentasPorCobrar = ({
     return data.slice(startIndex, startIndex + limit);
   }, [filteredData, pagination]);
 
-  const allVisibleSelected =
-    paginatedData.length > 0 && paginatedData.every((cuenta) => selectedCuentas.includes(cuenta.id));
-
   useEffect(() => {
     if (!Array.isArray(cuentasPorCobrar) || cuentasPorCobrar.length === 0) {
       if (selectedCuentas.length > 0) {
@@ -98,32 +91,6 @@ const CuentasPorCobrar = ({
 
   const handleSearch = (searchTerm) => {
     actualizarFiltros({ cliente: searchTerm });
-  };
-
-  // Los cambios de filtros se aplican desde el FiltersSidebar via setFiltersWrapper
-
-  const handleSelectCuenta = (cuentaId) => {
-    setSelectedCuentas(prev => 
-      prev.includes(cuentaId)
-        ? prev.filter(id => id !== cuentaId)
-        : [...prev, cuentaId]
-    );
-  };
-
-  const handleSelectAll = (checked) => {
-    setSelectedCuentas(checked ? paginatedData.map((cuenta) => cuenta.id) : []);
-  };
-
-  const handleEnviarEstados = async () => {
-    try {
-      for (const cuentaId of selectedCuentas) {
-        await enviarEstadoCuenta(cuentaId);
-      }
-      toast.success('Estados de cuenta enviados exitosamente');
-      setSelectedCuentas([]);
-    } catch (error) {
-      toast.error('Error al enviar estados de cuenta: ' + (error.message || 'Ocurrió un error'));
-    }
   };
 
   // Configuración para FiltersSidebar (nuevo API)
@@ -205,41 +172,12 @@ const CuentasPorCobrar = ({
 
   const columns = [
     {
-      key: 'select',
-      label: (
-        <input
-          type="checkbox"
-          className="form-check-input"
-          checked={allVisibleSelected}
-          onChange={(e) => handleSelectAll(e.target.checked)}
-        />
-      ),
-      render: (cuenta) => (
-        <input
-          type="checkbox"
-          className="form-check-input"
-          checked={selectedCuentas.includes(cuenta.id)}
-          onChange={() => handleSelectCuenta(cuenta.id)}
-        />
-      )
-    },
-    {
       key: 'cliente',
       label: 'Cliente',
       render: (cuenta) => (
         <div>
           <div className="fw-semibold">{cuenta.cliente}</div>
-          <small className="text-muted">{cuenta.ruc}</small>
-        </div>
-      )
-    },
-    {
-      key: 'contacto',
-      label: 'Contacto',
-      render: (cuenta) => (
-        <div>
-          <div>{cuenta.telefono}</div>
-          <small className="text-muted">{cuenta.email}</small>
+          {/* <small className="text-muted">{cuenta.ruc}</small> */}
         </div>
       )
     },
@@ -323,69 +261,11 @@ const CuentasPorCobrar = ({
           </span>
         );
       }
-    },
-    // {
-    //   key: 'acciones',
-    //   label: 'Acciones',
-    //   render: (cuenta) => (
-    //     <div className="dropdown">
-    //       <button
-    //         className="btn btn-sm btn-outline-secondary dropdown-toggle"
-    //         type="button"
-    //         data-bs-toggle="dropdown"
-    //       >
-    //         Acciones
-    //       </button>
-    //       <ul className="dropdown-menu">
-    //         <li>
-    //           <button
-    //             className="dropdown-item"
-    //             onClick={() => onVerDetalle(cuenta.id)}
-    //           >
-    //             <i className="fas fa-eye me-2"></i>
-    //             Ver Detalle
-    //           </button>
-    //         </li>
-    //         <li>
-    //           <button
-    //             className="dropdown-item"
-    //             onClick={() => enviarEstadoCuenta(cuenta.id)}
-    //           >
-    //             <i className="fas fa-envelope me-2"></i>
-    //             Enviar Estado
-    //           </button>
-    //         </li>
-    //         <li><hr className="dropdown-divider" /></li>
-    //         <li>
-    //           <button className="dropdown-item text-primary">
-    //             <i className="fas fa-phone me-2"></i>
-    //             Llamar Cliente
-    //           </button>
-    //         </li>
-    //       </ul>
-    //     </div>
-    //   )
-    // }
+    }
   ];
 
   return (
     <div className="container-fluid">
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">
-          <i className="fas fa-list me-2 text-primary"></i>
-          Cuentas por Cobrar
-        </h2> 
-        <div className="d-flex gap-2">
-          {selectedCuentas.length > 0 && (
-            <button className="btn btn-primary" onClick={handleEnviarEstados}>
-              <i className="fas fa-envelope me-1"></i>
-              Enviar Estados ({selectedCuentas.length})
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Toolbar: búsqueda fija + botón Filtros + limpiar */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="d-flex align-items-center gap-2 flex-grow-1">

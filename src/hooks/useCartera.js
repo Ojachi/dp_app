@@ -15,13 +15,8 @@ export const useCartera = () => {
   const [loadingCount, setLoadingCount] = useState(0);
   const [error, setErrorMessage] = useState(null);
 
-  // Estados para diferentes secciones
-  const [resumen, setResumen] = useState(null);
+  // Estado principal utilizado por la vista actual
   const [cuentasPorCobrar, setCuentasPorCobrar] = useState([]);
-  const [detalleCliente, setDetalleCliente] = useState(null);
-  const [estadisticasMora, setEstadisticasMora] = useState([]);
-  const [proyeccionCobranza, setProyeccionCobranza] = useState([]);
-  const [historialGestiones, setHistorialGestiones] = useState([]);
 
   // Filtros y paginación
   const [filtros, setFiltros] = useState(() => ({ ...INITIAL_FILTERS }));
@@ -41,21 +36,6 @@ export const useCartera = () => {
   const stopLoading = useCallback(() => {
     setLoadingCount((prev) => Math.max(prev - 1, 0));
   }, []);
-
-  const cargarResumen = useCallback(async () => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const data = await carteraService.getResumenCartera();
-      setResumen(data);
-    } catch (err) {
-      const message = buildErrorMessage('Error al cargar resumen de cartera', err);
-      setErrorMessage(message);
-      console.error('Error cargarResumen:', err);
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
 
   const cargarCuentasPorCobrar = useCallback(async (nuevosFiltros = filtros, options = {}) => {
     const { resetPage = false } = options;
@@ -102,162 +82,6 @@ export const useCartera = () => {
     }
   }, [filtros, startLoading, stopLoading]);
 
-  const cargarDetalleCliente = useCallback(async (clienteId) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const data = await carteraService.getDetalleCuenta(clienteId);
-      setDetalleCliente(data);
-    } catch (err) {
-      const message = buildErrorMessage('Error al cargar detalle del cliente', err);
-      setErrorMessage(message);
-      console.error('Error cargarDetalleCliente:', err);
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
-  const cargarEstadisticasMora = useCallback(async () => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const data = await carteraService.getEstadisticasMora();
-      setEstadisticasMora(data);
-    } catch (err) {
-      const message = buildErrorMessage('Error al cargar estadísticas de mora', err);
-      setErrorMessage(message);
-      console.error('Error cargarEstadisticasMora:', err);
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
-  const cargarProyeccionCobranza = useCallback(async () => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const data = await carteraService.getProyeccionCobranza();
-      setProyeccionCobranza(data);
-    } catch (err) {
-      const message = buildErrorMessage('Error al cargar proyección de cobranza', err);
-      setErrorMessage(message);
-      console.error('Error cargarProyeccionCobranza:', err);
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
-  const cargarHistorialGestiones = useCallback(async (clienteId) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const data = await carteraService.getHistorialGestiones(clienteId);
-      setHistorialGestiones(data);
-    } catch (err) {
-      const message = buildErrorMessage('Error al cargar historial de gestiones', err);
-      setErrorMessage(message);
-      console.error('Error cargarHistorialGestiones:', err);
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
-  const actualizarLimiteCredito = useCallback(async (clienteId, nuevoLimite, observaciones) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const result = await carteraService.actualizarLimiteCredito(clienteId, nuevoLimite, observaciones);
-
-      setCuentasPorCobrar((prev) =>
-        prev.map((cuenta) =>
-          cuenta.id === clienteId
-            ? { ...cuenta, limiteCredito: result?.limiteCredito ?? nuevoLimite }
-            : cuenta
-        )
-      );
-
-      if (detalleCliente && detalleCliente.id === clienteId) {
-        setDetalleCliente((prev) => ({
-          ...prev,
-          limiteCredito: result?.limiteCredito ?? nuevoLimite
-        }));
-      }
-
-      return result;
-    } catch (err) {
-      const message = buildErrorMessage('Error al actualizar límite de crédito', err);
-      setErrorMessage(message);
-      console.error('Error actualizarLimiteCredito:', err);
-      throw err;
-    } finally {
-      stopLoading();
-    }
-  }, [detalleCliente, startLoading, stopLoading]);
-
-  const registrarGestionCobranza = useCallback(async (clienteId, gestion) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const result = await carteraService.registrarGestionCobranza(clienteId, gestion);
-
-      if (historialGestiones.length > 0) {
-        await cargarHistorialGestiones(clienteId);
-      } else if (result) {
-        setHistorialGestiones((prev) => [result, ...prev]);
-      }
-
-      return result;
-    } catch (err) {
-      const message = buildErrorMessage('Error al registrar gestión', err);
-      setErrorMessage(message);
-      console.error('Error registrarGestionCobranza:', err);
-      throw err;
-    } finally {
-      stopLoading();
-    }
-  }, [historialGestiones.length, cargarHistorialGestiones, startLoading, stopLoading]);
-
-  const generarReporte = useCallback(async (filtrosReporte = {}) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const blob = await carteraService.generarReporteCartera(filtrosReporte);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `reporte-cartera-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      return { success: true, mensaje: 'Reporte generado exitosamente' };
-    } catch (err) {
-      const message = buildErrorMessage('Error al generar reporte', err);
-      setErrorMessage(message);
-      console.error('Error generarReporte:', err);
-      throw err;
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
-  const enviarEstadoCuenta = useCallback(async (clienteId, email = null) => {
-    startLoading();
-    setErrorMessage(null);
-    try {
-      const result = await carteraService.enviarEstadoCuenta(clienteId, email);
-      return result;
-    } catch (err) {
-      const message = buildErrorMessage('Error al enviar estado de cuenta', err);
-      setErrorMessage(message);
-      console.error('Error enviarEstadoCuenta:', err);
-      throw err;
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
-
   const actualizarFiltros = useCallback((nuevosFiltros) => {
     const nextFilters = { ...filtros, ...nuevosFiltros };
     if (Object.prototype.hasOwnProperty.call(nuevosFiltros, 'cliente')) {
@@ -283,51 +107,21 @@ export const useCartera = () => {
     });
   }, []);
 
-  const metricas = {
-    cuentasEnMora: cuentasPorCobrar.filter((c) => c.estado === 'En mora').length,
-    cuentasAlDia: cuentasPorCobrar.filter((c) => c.estado === 'Al día').length,
-    montoTotalMora: cuentasPorCobrar
-      .filter((c) => c.estado === 'En mora')
-      .reduce((sum, c) => sum + c.totalDeuda, 0),
-    clienteConMayorDeuda: cuentasPorCobrar.length > 0
-      ? cuentasPorCobrar.reduce((max, c) => (c.totalDeuda > max.totalDeuda ? c : max), cuentasPorCobrar[0])
-      : null
-  };
-
   useEffect(() => {
-    cargarResumen();
     cargarCuentasPorCobrar(undefined, { resetPage: true });
-    cargarEstadisticasMora();
-    cargarProyeccionCobranza();
-  }, [cargarResumen, cargarCuentasPorCobrar, cargarEstadisticasMora, cargarProyeccionCobranza]);
+  }, [cargarCuentasPorCobrar]);
 
   return {
     loading,
     error,
-    resumen,
     cuentasPorCobrar,
-    detalleCliente,
-    estadisticasMora,
-    proyeccionCobranza,
-    historialGestiones,
     filtros,
     pagination,
-    metricas,
-    cargarResumen,
     cargarCuentasPorCobrar,
-    cargarDetalleCliente,
-    cargarEstadisticasMora,
-    cargarProyeccionCobranza,
-    cargarHistorialGestiones,
-    actualizarLimiteCredito,
-    registrarGestionCobranza,
-    generarReporte,
-    enviarEstadoCuenta,
     actualizarFiltros,
     limpiarFiltros,
     cambiarPagina,
     setError: (mensaje) => setErrorMessage(mensaje || null),
     limpiarError: () => setErrorMessage(null),
-    limpiarDetalleCliente: () => setDetalleCliente(null)
   };
 };

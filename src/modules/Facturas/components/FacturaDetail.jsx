@@ -1,11 +1,10 @@
 /**
  * Componente para mostrar detalles completos de una factura
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatCurrency, formatDate, getEstadoBadge, getDiasVencimiento } from '../../../utils/formatters';
 import { Button } from '../../../components/Button';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { pagosService } from '../../../services/pagosService';
 import { facturasService } from '../../../services/facturasService';
 import { Select } from '../../../components/Select';
 import { useAuth } from '../../../context/AuthContext';
@@ -15,38 +14,17 @@ const FacturaDetail = ({
   onEdit,
   onDelete,
   onClose,
+  onUpdated = () => {},
   canEdit = false,
   canDelete = false,
   canViewPayments = false,
   canEditEntrega = false,
   loading = false
 }) => {
-  const [pagos, setPagos] = useState([]);
-  const [loadingPagos, setLoadingPagos] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [updatingEntrega, setUpdatingEntrega] = useState(false);
   const [estadoEntrega, setEstadoEntrega] = useState(factura?.estado_entrega || 'pendiente');
   const { isDistribuidor } = useAuth();
-
-  const loadPagos = useCallback(async () => {
-    if (!factura?.id) return;
-    
-    setLoadingPagos(true);
-    try {
-      const response = await pagosService.getAll({ factura_id: factura.id });
-      setPagos(response.results || response);
-    } catch (error) {
-      console.error('Error cargando pagos:', error);
-    } finally {
-      setLoadingPagos(false);
-    }
-  }, [factura?.id]);
-
-  useEffect(() => {
-    if (factura && canViewPayments && activeTab === 'pagos') {
-      loadPagos();
-    }
-  }, [factura, canViewPayments, activeTab, loadPagos]);
 
   useEffect(() => {
     setEstadoEntrega(factura?.estado_entrega || 'pendiente');
@@ -133,33 +111,6 @@ const FacturaDetail = ({
             General
           </button>
         </li>
-        {canViewPayments && (
-          <li className="nav-item">
-            <button
-              className={`nav-link ${activeTab === 'pagos' ? 'active' : ''}`}
-              onClick={() => setActiveTab('pagos')}
-            >
-              <i className="fas fa-money-bill me-1"></i>
-              Pagos
-              {factura.total_pagado > 0 && (
-                <span className="badge bg-success ms-1">
-                  {pagos.length}
-                </span>
-              )}
-            </button>
-          </li>
-        )}
-        {factura.productos && factura.productos.length > 0 && (
-          <li className="nav-item">
-            <button
-              className={`nav-link ${activeTab === 'productos' ? 'active' : ''}`}
-              onClick={() => setActiveTab('productos')}
-            >
-              <i className="fas fa-boxes me-1"></i>
-              Productos
-            </button>
-          </li>
-        )}
       </ul>
 
       {/* Contenido de tabs */}
@@ -184,40 +135,21 @@ const FacturaDetail = ({
                     </div>
                   </div>
                   
-                  {factura.cliente?.telefono && (
+                  {factura.poblacion?.nombre && (
                     <div className="mb-3">
-                      <label className="form-label text-muted">Teléfono:</label>
-                      <div>
-                        <a href={`tel:${factura.cliente.telefono}`} className="text-decoration-none">
-                          <i className="fas fa-phone me-1"></i>
-                          {factura.cliente.telefono}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {factura.cliente?.email && (
-                    <div className="mb-3">
-                      <label className="form-label text-muted">Email:</label>
-                      <div>
-                        <a href={`mailto:${factura.cliente.email}`} className="text-decoration-none">
-                          <i className="fas fa-envelope me-1"></i>
-                          {factura.cliente.email}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {factura.cliente?.direccion && (
-                    <div className="mb-3">
-                      <label className="form-label text-muted">Dirección:</label>
-                      <div>{factura.cliente.direccion}</div>
+                      <label className="form-label text-muted">Población:</label>
+                      <div>{factura.poblacion.nombre}</div>
                     </div>
                   )}
 
                   <div className="mb-2">
                     <label className="form-label text-muted">Código sucursal:</label>
                     <div>{factura.cliente_codigo || '-'}</div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label text-muted">Condición de Pago:</label>
+                    <div>{factura.condicion_pago || '-'}</div>
                   </div>
                 </div>
               </div>
@@ -255,11 +187,6 @@ const FacturaDetail = ({
                     <div>{factura.distribuidor?.full_name || 'No asignado'}</div>
                   </div>
 
-                  <div className="mb-3">
-                    <label className="form-label text-muted">Condición de Pago:</label>
-                    <div>{factura.condicion_pago || '-'}</div>
-                  </div>
-
                   {/* Estado de entrega */}
                   <div className="mb-2">
                     <label className="form-label text-muted d-block">Estado de Entrega:</label>
@@ -286,8 +213,18 @@ const FacturaDetail = ({
                           try {
                             setUpdatingEntrega(true);
                             const updated = await facturasService.patchFactura(factura.id, { estado_entrega: estadoEntrega });
-                            // idealmente levantar un callback para refrescar; por ahora sincronizamos localmente
-                            factura.estado_entrega = updated.estado_entrega || estadoEntrega;
+                            // disparar callback al padre para refrescar estado
+                            try {
+                              onUpdated(updated);
+                            } catch (cbErr) {
+                              console.warn('onUpdated callback lanzó un error, se ignora:', cbErr);
+                            }
+                            // sincronización local mínima como respaldo
+                            if (updated && updated.estado_entrega) {
+                              factura.estado_entrega = updated.estado_entrega;
+                            } else {
+                              factura.estado_entrega = estadoEntrega;
+                            }
                           } catch (e) {
                             console.error('Error actualizando estado de entrega:', e);
                           } finally {
@@ -299,11 +236,6 @@ const FacturaDetail = ({
                         Guardar
                       </Button>
                     </div>
-                    {factura.entrega_actualizado && (
-                      <small className="text-muted d-block mt-1">
-                        Última actualización: {formatDate(factura.entrega_actualizado)} {factura.entrega_actualizado_por ? `por ${factura.entrega_actualizado_por}` : ''}
-                      </small>
-                    )}
                   </div>
                 </div>
               </div>
@@ -378,98 +310,7 @@ const FacturaDetail = ({
           </div>
         )}
 
-        {/* Tab Pagos */}
-        {activeTab === 'pagos' && (
-          <div>
-            {loadingPagos ? (
-              <LoadingSpinner message="Cargando pagos..." />
-            ) : pagos.length === 0 ? (
-              <div className="text-center py-5">
-                <i className="fas fa-money-bill fa-3x text-muted mb-3"></i>
-                <h5 className="text-muted">Sin pagos registrados</h5>
-                <p className="text-muted">Esta factura no tiene pagos asociados.</p>
-              </div>
-            ) : (
-              <div className="card">
-                <div className="card-body p-0">
-                  <div className="table-responsive">
-                    <table className="table table-hover mb-0">
-                      <thead className="bg-light">
-                        <tr>
-                          <th>Fecha</th>
-                          <th>Valor</th>
-                          <th>Tipo de pago</th>
-                          <th>Comprobante</th>
-                          <th>Registrado por</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pagos.map((pago) => (
-                          <tr key={pago.id}>
-                            <td>{formatDate(pago.fecha_pago)}</td>
-                            <td className="fw-bold text-success">
-                              {formatCurrency(pago.valor_pagado || 0)}
-                            </td>
-                            <td>
-                              <i className={`fas ${
-                                pago.tipo_pago === 'efectivo' ? 'fa-money-bill' :
-                                pago.tipo_pago === 'transferencia' ? 'fa-university' :
-                                pago.tipo_pago === 'cheque' ? 'fa-money-check' : 'fa-credit-card'
-                              } me-1`}></i>
-                              <span className="text-capitalize">
-                                {(pago.tipo_pago || 'sin dato').replace(/_/g, ' ')}
-                              </span>
-                            </td>
-                            <td>{pago.numero_comprobante || '-'}</td>
-                            <td>{pago.usuario_nombre || 'N/D'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab Productos */}
-        {activeTab === 'productos' && factura.productos && (
-          <div className="card">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <thead className="bg-light">
-                    <tr>
-                      <th>Producto/Servicio</th>
-                      <th>Cantidad</th>
-                      <th>Valor Unitario</th>
-                      <th>Valor Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {factura.productos.map((producto, index) => (
-                      <tr key={index}>
-                        <td className="fw-medium">{producto.nombre}</td>
-                        <td>{producto.cantidad}</td>
-                        <td>{formatCurrency(producto.valor_unitario)}</td>
-                        <td className="fw-bold">{formatCurrency(producto.valor_total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-light">
-                    <tr>
-                      <th colSpan="3" className="text-end">Total:</th>
-                      <th className="text-success">
-                        {formatCurrency(factura.productos.reduce((sum, p) => sum + p.valor_total, 0))}
-                      </th>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+        
       </div>
     </div>
   );

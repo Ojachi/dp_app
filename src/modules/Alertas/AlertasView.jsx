@@ -5,8 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { useAlertas } from '../../hooks/useAlertas';
 import { useAuth } from '../../context/AuthContext';
 import AlertasList from './AlertasList';
-import AlertaForm from './AlertaForm';
-import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 
 const AlertasView = () => {
@@ -20,13 +18,11 @@ const AlertasView = () => {
     loadContadores,
     marcarLeida,
     marcarNoLeida,
-    crearAlerta,
     eliminarAlerta,
     clearError
   } = useAlertas();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [showModalForm, setShowModalForm] = useState(false);
 
   useEffect(() => {
     loadAlertas();
@@ -49,25 +45,10 @@ const AlertasView = () => {
     loadContadores();
   };
 
-  // const handleCrearAlerta = () => {
-  //   setShowModalForm(true);
-  // };
-
-  const handleSubmitForm = async (alertaData) => {
-    try {
-      await crearAlerta(alertaData);
-      setShowModalForm(false);
-      handleRecargar();
-    } catch (submitError) {
-      console.error('Error al guardar alerta:', submitError);
-    }
-  };
-
   const handleEliminarAlerta = async (id) => {
     if (!window.confirm('¿Está seguro de que desea eliminar esta alerta?')) {
       return;
     }
-
     try {
       await eliminarAlerta(id);
       handleRecargar();
@@ -106,16 +87,6 @@ const AlertasView = () => {
               <i className="fas fa-refresh " ></i>
               Actualizar
             </Button>
-            {/* {user?.is_gerente && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleCrearAlerta}
-              >
-                <i className="bi bi-plus-lg me-1"></i>
-                Nueva alerta
-              </Button>
-            )} */}
           </div>
         </div>
       </div>
@@ -176,7 +147,7 @@ const AlertasView = () => {
             <div className="card shadow-sm border-0">
               <div className="card-body">
                 <span className="text-muted d-block">Total de alertas</span>
-                <h4 className="mb-0">{contadores.total ?? 0}</h4>
+                <h4 className="mb-0">{(contadores.total ?? alertas.length) || 0}</h4>
               </div>
             </div>
           </div>
@@ -191,16 +162,16 @@ const AlertasView = () => {
           <div className="col-md-3 col-sm-6">
             <div className="card shadow-sm border-0">
               <div className="card-body">
-                <span className="text-muted d-block">Recientes</span>
-                <h4 className="mb-0 text-primary">{contadores.recientes ?? 0}</h4>
+                <span className="text-muted d-block">Críticas</span>
+                <h4 className="mb-0 text-danger">{contadores.criticas ?? 0}</h4>
               </div>
             </div>
           </div>
           <div className="col-md-3 col-sm-6">
             <div className="card shadow-sm border-0">
               <div className="card-body">
-                <span className="text-muted d-block">Prioridad alta</span>
-                <h4 className="mb-0 text-warning">{contadores.por_prioridad?.alta ?? 0}</h4>
+                <span className="text-muted d-block">Recientes</span>
+                <h4 className="mb-0 text-primary">{contadores.recientes ?? 0}</h4>
               </div>
             </div>
           </div>
@@ -214,22 +185,6 @@ const AlertasView = () => {
         onEliminar={handleEliminarAlerta}
         canManage={Boolean(user?.is_gerente)}
       />
-
-      <Modal
-        show={showModalForm}
-        onHide={() => {
-          setShowModalForm(false);
-        }}
-        title="Nueva alerta"
-        size="lg"
-      >
-        <AlertaForm
-          onSubmit={handleSubmitForm}
-          onCancel={() => {
-            setShowModalForm(false);
-          }}
-        />
-      </Modal>
     </div>
   );
 };

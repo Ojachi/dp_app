@@ -32,15 +32,6 @@ export const entidadesService = {
         throw new Error('Error al actualizar cliente');
       }
     },
-
-    async delete(id) {
-      try {
-        await apiClient.delete(`/clientes/clientes/${id}/`);
-        return true;
-      } catch (error) {
-        throw new Error('Error al eliminar cliente');
-      }
-    }
   },
 
   // Servicios para poblaciones

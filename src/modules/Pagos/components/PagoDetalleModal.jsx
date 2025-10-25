@@ -183,11 +183,6 @@ const PagoDetalleModal = ({ pago, show, onHide, loading }) => {
                         <div className="mb-2">
                           <strong>Cliente:</strong> {clienteNombre}
                         </div>
-                        {pago.factura.cliente?.email && (
-                          <div className="mb-2">
-                            <strong>Email:</strong> {pago.factura.cliente.email}
-                          </div>
-                        )}
                       </div>
                       <div className="col-md-6">
                         <div className="mb-2">

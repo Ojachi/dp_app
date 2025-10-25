@@ -36,8 +36,6 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
   const [facturasPendientes, setFacturasPendientes] = useState([]);
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
   const [confirming, setConfirming] = useState(false);
-  // Gestión de cuentas removida del formulario de pagos. La administración de cuentas
-  // ahora se realiza únicamente desde Parametrización > Cuentas de pago.
 
   const metodoSeleccionado = useMemo(
     () => metodosPago.find((metodo) => metodo.id === formData.tipo_pago),
@@ -258,8 +256,6 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
     if (!formData.fecha_pago) {
       newErrors.fecha_pago = 'La fecha de pago es requerida';
     }
-
-    // Ya no se exige referencia/numero de comprobante
 
     if (formData.tiene_nota) {
       if (!formData.valor_nota || parseNumber(formData.valor_nota) <= 0) {
@@ -482,8 +478,6 @@ const PagoForm = ({ pago, onSubmit, onCancel, initialLoading = false }) => {
           />
           {errors.fecha_pago && <div className="invalid-feedback">{errors.fecha_pago}</div>}
         </div>
-
-        {/* Campo de referencia/comprobante eliminado según requerimiento */}
 
         {/* Tiene nota? */}
         <div className="col-md-4 d-flex align-items-end">

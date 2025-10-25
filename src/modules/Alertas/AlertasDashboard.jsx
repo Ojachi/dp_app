@@ -28,9 +28,10 @@ const AlertasDashboard = ({ contadores }) => {
   // Función para obtener color de prioridad
   const getPrioridadColor = (prioridad) => {
     switch (prioridad?.toLowerCase()) {
-      case 'alta': return 'danger';
-      case 'media': return 'warning';
-      case 'baja': return 'info';
+      case 'critica': return 'danger';
+      case 'alta': return 'warning';
+      case 'media': return 'info';
+      case 'baja': return 'secondary';
       default: return 'secondary';
     }
   };

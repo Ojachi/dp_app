@@ -66,9 +66,6 @@ const PagosTable = ({
           {pago.cliente_codigo && (
             <small className="text-muted">Código: {pago.cliente_codigo}</small>
           )}
-          {pago.factura?.cliente?.email && (
-            <small className="text-muted">{pago.factura.cliente.email}</small>
-          )}
         </div>
       )
     },

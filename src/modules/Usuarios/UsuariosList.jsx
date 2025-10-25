@@ -102,24 +102,6 @@ const UsuariosList = ({
       render: (usuario) => getEstadoBadge(usuario.is_active),
       width: '100px'
     },
-    // {
-    //   key: 'fecha_registro',
-    //   header: 'Registro',
-    //   render: (usuario) => (
-    //     <small>{formatFecha(usuario.date_joined)}</small>
-    //   ),
-    //   width: '120px'
-    // },
-    // {
-    //   key: 'ultimo_login',
-    //   header: 'Último Login',
-    //   render: (usuario) => (
-    //     <small className={usuario.last_login ? 'text-success' : 'text-warning'}>
-    //       {formatFecha(usuario.last_login)}
-    //     </small>
-    //   ),
-    //   width: '120px'
-    // },
     {
       key: 'acciones',
       header: 'Acciones',

@@ -6,8 +6,6 @@ import { usuariosService } from '../services/usuariosService';
 
 export const useUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
-  //const [estadisticas, setEstadisticas] = useState(null);
-  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -18,7 +16,6 @@ export const useUsuarios = () => {
       setError(null);
       const response = await usuariosService.getUsuarios(filtros);
       setUsuarios(response);
-      console.log('Usuarios cargados:', response);
       return response;
     } catch (err) {
       setError(err.message);
@@ -26,38 +23,6 @@ export const useUsuarios = () => {
       throw err;
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  // Cargar estadísticas
-  // const loadEstadisticas = useCallback(async () => {
-  //   try {
-  //     const data = await usuariosService.getEstadisticas();
-  //     setEstadisticas(data);
-  //     return data;
-  //   } catch (err) {
-  //     console.error('Error al cargar estadísticas:', err);
-  //     setEstadisticas({
-  //       total_usuarios: 0,
-  //       activos: 0,
-  //       inactivos: 0,
-  //       por_rol: { gerentes: 0, vendedores: 0, distribuidores: 0 },
-  //       registrados_mes: 0,
-  //       ultimo_login_24h: 0,
-  //       sin_login_30_dias: 0
-  //     });
-  //   }
-  // }, []);
-
-  // Cargar logs de actividad
-  const loadLogs = useCallback(async (filtros = {}) => {
-    try {
-      const response = await usuariosService.getLogsActividad(filtros);
-      setLogs(response.results || []);
-      return response;
-    } catch (err) {
-      console.error('Error al cargar logs:', err);
-      setLogs([]);
     }
   }, []);
 
@@ -81,15 +46,6 @@ export const useUsuarios = () => {
       
       // Agregar a la lista local
       setUsuarios(prev => [nuevoUsuario, ...prev]);
-      
-      // Actualizar estadísticas
-      // setEstadisticas(prev => prev ? {
-      //   ...prev,
-      //   total_usuarios: prev.total_usuarios + 1,
-      //   activos: nuevoUsuario.is_active ? prev.activos + 1 : prev.activos,
-      //   inactivos: !nuevoUsuario.is_active ? prev.inactivos + 1 : prev.inactivos
-      // } : null);
-      
       return nuevoUsuario;
     } catch (err) {
       setError(err.message);
@@ -128,13 +84,6 @@ export const useUsuarios = () => {
           : usuario
       ));
       
-      // Actualizar estadísticas
-      // setEstadisticas(prev => prev ? {
-      //   ...prev,
-      //   activos: Math.max(0, prev.activos - 1),
-      //   inactivos: prev.inactivos + 1
-      // } : null);
-      
       return true;
     } catch (err) {
       setError(err.message);
@@ -152,15 +101,6 @@ export const useUsuarios = () => {
       setUsuarios(prev => prev.map(usuario => 
         usuario.id === id ? usuarioActualizado : usuario
       ));
-      
-      // Actualizar estadísticas
-      // const cambio = is_active ? 1 : -1;
-      // setEstadisticas(prev => prev ? {
-      //   ...prev,
-      //   activos: Math.max(0, prev.activos + cambio),
-      //   inactivos: Math.max(0, prev.inactivos - cambio)
-      // } : null);
-      
       return usuarioActualizado;
     } catch (err) {
       setError(err.message);
@@ -202,18 +142,6 @@ export const useUsuarios = () => {
     }
   }, []);
 
-  // Exportar usuarios
-  // const exportarUsuarios = useCallback(async (filtros = {}, formato = 'excel') => {
-  //   try {
-  //     setError(null);
-  //     const result = await usuariosService.exportarUsuarios(filtros, formato);
-  //     return result;
-  //   } catch (err) {
-  //     setError(err.message);
-  //     throw err;
-  //   }
-  // }, []);
-
   // Obtener rol de usuario formateado
   const getUserRole = useCallback((usuario) => {
     if (usuario.is_gerente) return { key: 'gerente', label: 'Gerente', color: 'success' };
@@ -236,16 +164,9 @@ export const useUsuarios = () => {
     }
   }, [usuarios]);
 
-  // Efecto para cargar estadísticas al inicializar
-  // useEffect(() => {
-  //   loadEstadisticas();
-  // }, [loadEstadisticas]);
-
   return {
     // Estado
     usuarios,
-    //estadisticas,
-    logs,
     loading,
     error,
     
@@ -259,9 +180,6 @@ export const useUsuarios = () => {
     // Acciones específicas
     toggleUsuarioStatus,
     resetearPassword,
-    //loadEstadisticas,
-    loadLogs,
-    //exportarUsuarios,
     
     // Validaciones
     validarEmail,
@@ -272,13 +190,5 @@ export const useUsuarios = () => {
     getUsuariosPorRol,
     clearError: () => setError(null),
     setUsuarios,
-    
-    // Propiedades derivadas
-    // totalUsuarios: estadisticas?.total_usuarios || 0,
-    // usuariosActivos: estadisticas?.activos || 0,
-    // usuariosInactivos: estadisticas?.inactivos || 0,
-    // gerentes: estadisticas?.por_rol?.gerentes || 0,
-    // vendedores: estadisticas?.por_rol?.vendedores || 0,
-    // distribuidores: estadisticas?.por_rol?.distribuidores || 0
   };
 };

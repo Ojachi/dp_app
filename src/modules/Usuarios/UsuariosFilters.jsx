@@ -69,8 +69,6 @@ const UsuariosFilters = ({ filtros, onFiltrosChange, onLimpiar }) => {
             />
           </div>
 
-          {/* Ciudad removida en MVP/backend */}
-
           {/* Botón de limpiar */}
           <div className="col-md-2 d-flex align-items-end">
             <Button

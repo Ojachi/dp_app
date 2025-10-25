@@ -57,6 +57,17 @@ export const useAlertas = (options = {}) => {
     }
   }, []);
 
+  // Cargar estadísticas agregadas (si el backend las expone)
+  const loadEstadisticas = useCallback(async (filtros = {}) => {
+    try {
+      const data = await alertasService.getEstadisticas(filtros);
+      return data;
+    } catch (err) {
+      console.error('Error al cargar estadísticas:', err);
+      return null;
+    }
+  }, []);
+
   // Marcar como leída
   const marcarLeida = useCallback(async (id) => {
     try {
@@ -186,30 +197,6 @@ export const useAlertas = (options = {}) => {
     }
   }, [alertas]);
 
-  // Obtener estadísticas
-  const loadEstadisticas = useCallback(async (filtros = {}) => {
-    try {
-      setError(null);
-      const estadisticas = await alertasService.getEstadisticas(filtros);
-      return estadisticas;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
-
-  // Exportar reporte
-  const exportarReporte = useCallback(async (filtros = {}, formato = 'excel') => {
-    try {
-      setError(null);
-      const result = await alertasService.exportarReporte(filtros, formato);
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
-
   // Función de refrescar (alias para compatibilidad)
   const refresh = useCallback(() => {
     loadContadores();
@@ -219,6 +206,7 @@ export const useAlertas = (options = {}) => {
   // Alias para compatibilidad con código existente
   const marcarComoLeida = marcarLeida;
   const contadorNuevas = contadores?.no_leidas || 0;
+  const contadorCriticas = contadores?.criticas || 0;
 
   // Efecto para cargar contadores al inicializar
   useEffect(() => {
@@ -237,18 +225,18 @@ export const useAlertas = (options = {}) => {
     // Acciones
     loadAlertas,
     loadContadores,
+    loadEstadisticas,
     marcarLeida,
     marcarNoLeida,
     marcarVariasLeidas,
     crearAlerta,
     eliminarAlerta,
-    loadEstadisticas,
-    exportarReporte,
     refresh,
     
     // Aliases para compatibilidad
     marcarComoLeida,
     contadorNuevas,
+    contadorCriticas,
     
     // Utilidades
     clearError: () => setError(null),

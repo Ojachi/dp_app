@@ -21,9 +21,10 @@ const formatFecha = (fecha) => {
 
 const prioridadBadge = (prioridad) => {
   const mapaColores = {
-    alta: 'danger',
-    media: 'warning',
-    baja: 'info'
+    critica: 'danger',
+    alta: 'warning',
+    media: 'info',
+    baja: 'secondary'
   };
 
   const color = mapaColores[prioridad?.toLowerCase()] || 'secondary';
@@ -106,10 +107,6 @@ const AlertasList = ({
                       Leída: {formatFecha(alerta.fecha_leida)}
                     </span>
                   )}
-                  <span className="ms-3">
-                    <i className="bi bi-person me-1"></i>
-                    {alerta.usuario_destino_nombre || 'Todos'}
-                  </span>
                 </div>
               </div>
 

@@ -6,25 +6,8 @@ import { pagosService } from '../services/pagosService';
 
 export const usePagos = () => {
   const [pagos, setPagos] = useState([]);
-  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Cargar dashboard
-  const loadDashboard = useCallback(async (filters = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await pagosService.getDashboard(filters);
-      setDashboardData(data);
-      return data;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // Cargar pagos con paginación
   const loadPagos = useCallback(async (filters = {}, page = 1, pageSize = 20) => {
@@ -102,21 +85,6 @@ export const usePagos = () => {
     }
   }, []);
 
-  // Obtener facturas pendientes
-  const loadFacturasPendientes = useCallback(async (filters = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await pagosService.getFacturasPendientes(filters);
-      return response;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Aplicar pago a factura
   const aplicarPagoFactura = useCallback(async (facturaId, pagoData) => {
     try {
@@ -132,37 +100,19 @@ export const usePagos = () => {
     }
   }, []);
 
-  // Exportar reporte
-  const exportarReporte = useCallback(async (filters = {}, formato = 'excel') => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await pagosService.exportarReporte(filters, formato);
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   return {
     // Estado
     pagos,
-    dashboardData,
     loading,
     error,
     
     // Acciones
-    loadDashboard,
     loadPagos,
     createPago,
     updatePago,
     deletePago,
-    loadFacturasPendientes,
     aplicarPagoFactura,
-    exportarReporte,
     
     // Utilidades
     clearError: () => setError(null),

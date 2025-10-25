@@ -60,45 +60,6 @@ class UsuariosService {
     return response.data || { success: true };
   }
 
-  // Obtener estadísticas de usuarios
-  async getEstadisticas() {
-    // Nota: Endpoint pendiente en backend. Ajusta la ruta si se implementa
-    const response = await apiClient.get('/usuarios/estadisticas/');
-    return response.data;
-  }
-
-  // Obtener logs de actividad
-  async getLogsActividad(filtros = {}) {
-    const params = new URLSearchParams();
-    Object.keys(filtros).forEach(key => {
-      if (filtros[key] !== '' && filtros[key] !== null && filtros[key] !== undefined) {
-        params.append(key, filtros[key]);
-      }
-    });
-    // Nota: Endpoint pendiente en backend. Ajusta la ruta si se implementa
-    const response = await apiClient.get(`/usuarios/logs/?${params.toString()}`);
-    return response.data;
-  }
-
-  // Exportar usuarios
-  async exportarUsuarios(filtros = {}, formato = 'excel') {
-    const params = new URLSearchParams();
-    params.append('formato', formato);
-    Object.keys(filtros).forEach(key => {
-      if (filtros[key] !== '' && filtros[key] !== null && filtros[key] !== undefined) {
-        params.append(key, filtros[key]);
-      }
-    });
-    // Nota: Endpoint pendiente en backend. Ajusta la ruta si se implementa
-    const response = await apiClient.get(`/usuarios/exportar/?${params.toString()}`, {
-      responseType: 'blob'
-    });
-    return {
-      data: response.data,
-      filename: `usuarios_${new Date().toISOString().split('T')[0]}.${formato === 'excel' ? 'xlsx' : 'pdf'}`
-    };
-  }
-
   // Validar email único
   async validarEmail(email, excludeId = null) {
     const params = new URLSearchParams();
@@ -134,9 +95,6 @@ export const {
   deleteUsuario,
   toggleUsuarioStatus,
   resetPassword,
-  getEstadisticas,
-  getLogsActividad,
-  exportarUsuarios,
   validarEmail,
   validarUsername
 } = usuariosService;

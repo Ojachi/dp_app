@@ -10,9 +10,13 @@ import logoClaro from '../assets/logo_claro.png';
 
 const Header = ({ onToggleSidebar }) => {
   const { user, logout, isDistribuidor } = useAuth();
-  const { contadorNuevas } = useAlertas();
+  const { contadorNuevas, contadorCriticas } = useAlertas();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const countsParts = [];
+  if (contadorNuevas > 0) countsParts.push(`${contadorNuevas} nuevas`);
+  if (contadorCriticas > 0) countsParts.push(`⚠ ${contadorCriticas} críticas`);
+  const alertasCountsLabel = countsParts.length ? ` (${countsParts.join(', ')})` : '';
 
   const handleLogout = async () => {
     await logout();
@@ -67,8 +71,13 @@ const Header = ({ onToggleSidebar }) => {
               title="Ver alertas"
             >
               <i className="fas fa-bell"></i>
+              {contadorCriticas > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ zIndex: 2 }}>
+                  {contadorCriticas}
+                </span>
+              )}
               {contadorNuevas > 0 && (
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                <span className="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-secondary" style={{ zIndex: 1 }}>
                   {contadorNuevas}
                 </span>
               )}
@@ -106,7 +115,6 @@ const Header = ({ onToggleSidebar }) => {
                   </div>
                 </li>
                 <li><hr className="dropdown-divider" /></li>
-                {/* Dashboard eliminado: no se usa en la app */}
                 {!isDistribuidor() && (
                   <li>
                     <button 
@@ -114,7 +122,7 @@ const Header = ({ onToggleSidebar }) => {
                       onClick={() => navigate('/alertas')}
                     >
                       <i className="fas fa-bell me-2"></i>
-                      Alertas {contadorNuevas > 0 && `(${contadorNuevas})`}
+                      {`Alertas${alertasCountsLabel}`}
                     </button>
                   </li>
                 )}

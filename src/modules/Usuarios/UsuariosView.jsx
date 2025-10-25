@@ -17,17 +17,14 @@ const UsuariosView = () => {
   const { user } = useAuth();
   const {
     usuarios,
-  // estadisticas,
     loading,
     error,
     loadUsuarios,
-    //loadEstadisticas,
     crearUsuario,
     actualizarUsuario,
     eliminarUsuario,
     toggleUsuarioStatus,
     resetearPassword,
-    //exportarUsuarios,
     clearError
   } = useUsuarios();
 
@@ -103,7 +100,6 @@ const UsuariosView = () => {
       if (vista === 'lista') {
         loadUsuarios(filtros);
       }
-      //loadEstadisticas();
     } catch (error) {
       console.error('Error al guardar usuario:', error);
     }
@@ -135,7 +131,6 @@ const UsuariosView = () => {
       }
       toast.success(is_active ? 'Usuario activado' : 'Usuario desactivado');
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
       const msg = error?.response?.data?.is_active?.[0] || error?.response?.data?.is_active || error?.response?.data?.detail || error?.message || 'No se pudo cambiar el estado';
       toast.error(msg);
     }
@@ -157,24 +152,6 @@ const UsuariosView = () => {
       toast.error('Error al resetear contraseña');
     }
   };
-
-  // Función para exportar
-  // const handleExportar = async (formato = 'excel') => {
-  //   try {
-  //     const resultado = await exportarUsuarios(filtros, formato);
-      
-  //     // Crear enlace de descarga
-  //     const url = window.URL.createObjectURL(new Blob([resultado.data]));
-  //     const link = document.createElement('a');
-  //     link.href = url;
-  //     link.setAttribute('download', resultado.filename);
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     link.remove();
-  //   } catch (error) {
-  //     console.error('Error al exportar:', error);
-  //   }
-  // };
 
   // Verificar permisos (solo gerentes pueden acceder)
   if (!user?.is_gerente) {
@@ -246,28 +223,6 @@ const UsuariosView = () => {
                 )}
               </div>
             </div>
-            {/* <div className="col-md-6 text-end">
-              <div className="btn-group" role="group">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => handleExportar('excel')}
-                  disabled={loading}
-                >
-                  <i className="bi bi-file-earmark-excel me-1"></i>
-                  Excel
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => handleExportar('pdf')}
-                  disabled={loading}
-                >
-                  <i className="bi bi-file-earmark-pdf me-1"></i>
-                  PDF
-                </Button>
-              </div>
-            </div> */}
           </div>
 
           {/* Filtros */}

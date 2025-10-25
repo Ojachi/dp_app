@@ -1,48 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useCartera } from '../../hooks/useCartera';
 import CuentasPorCobrar from './CuentasPorCobrar';
-import DetalleCliente from './DetalleCliente';
+
 
 const CarteraView = () => {
-  // MVP: Solo "Cuentas por Cobrar" y detalle por cliente
-  const [activeTab, setActiveTab] = useState('lista');
-  const [selectedClienteId, setSelectedClienteId] = useState(null);
+
   const cartera = useCartera();
 
-  const handleVerDetalle = (clienteId) => {
-    setSelectedClienteId(clienteId);
-    setActiveTab('detalle');
-    cartera.cargarDetalleCliente(clienteId);
-  };
-
-  const handleVolverListado = () => {
-    setActiveTab('lista');
-    cartera.limpiarDetalleCliente();
-    setSelectedClienteId(null);
-  };
-
-  // No tabs in MVP; keep simple list/detail navigation
-
   const renderContent = () => {
-    if (activeTab === 'detalle' && selectedClienteId) {
-      return (
-        <DetalleCliente
-          {...cartera}
-          clienteId={selectedClienteId}
-          onVolver={handleVolverListado}
-        />
-      );
-    }
-
     return (
       <CuentasPorCobrar
         {...cartera}
-        onVerDetalle={handleVerDetalle}
       />
     );
   };
-
-  // No tabs structure required in MVP
 
   return (
     <div className="container-fluid p-4">

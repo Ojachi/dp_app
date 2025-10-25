@@ -28,31 +28,23 @@ export const AuthProvider = ({ children }) => {
         const savedUser = authService.getUser();
         const hasValidToken = authService.isTokenValid();
         
-        console.log('Inicializando autenticación...');
-        console.log('Usuario guardado:', savedUser);
-        console.log('Token válido:', hasValidToken);
-        
         if (savedUser && hasValidToken) {
           try {
             // Verificar que el token siga siendo válido con el servidor
             const currentUser = await authService.getCurrentUser();
             setUser(currentUser);
             setIsAuthenticated(true);
-            console.log('Autenticación inicializada correctamente');
           } catch (error) {
-            console.error('Error al verificar usuario con servidor:', error);
             // Token inválido en servidor, limpiar datos locales
             authService.logout();
           }
         } else {
           // No hay usuario o token inválido
           if (savedUser || authService.getToken()) {
-            console.log('Limpiando datos de sesión expirados');
             authService.logout();
           }
         }
       } catch (error) {
-        console.error('Error al inicializar autenticación:', error);
         authService.logout();
       } finally {
         setLoading(false);
@@ -66,11 +58,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       setLoading(true);
-      console.log('Iniciando proceso de login...');
       
       // Realizar login y obtener token
       await authService.login(credentials);
-      console.log('Login exitoso, obteniendo información del usuario...');
       
       // Obtener información completa del usuario con el token
       const currentUser = await authService.getCurrentUser();
@@ -79,10 +69,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       authService.saveUser(currentUser);
       
-      console.log('Usuario autenticado correctamente:', currentUser);
       return { success: true, user: currentUser };
     } catch (error) {
-      console.error('Error en login:', error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -92,14 +80,11 @@ export const AuthProvider = ({ children }) => {
   // Función para logout
   const logout = async () => {
     try {
-      console.log('Cerrando sesión...');
       await authService.logout();
     } catch (error) {
-      console.error('Error en logout:', error);
     } finally {
       setUser(null);
       setIsAuthenticated(false);
-      console.log('Sesión cerrada correctamente');
     }
   };
 

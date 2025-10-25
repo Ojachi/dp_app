@@ -177,56 +177,5 @@ export const pagosService = {
     } catch (error) {
       throw new Error(extractErrorMessage(error, 'Error al aplicar el pago a la factura'));
     }
-  },
-
-  async getDashboard(filters = {}) {
-    try {
-      const response = await apiClient.get('/pagos/dashboard/', {
-        params: buildParams(filters)
-      });
-      return response.data;
-    } catch (error) {
-      console.warn('No se pudo obtener el dashboard de pagos, usando datos simulados.');
-      return {
-        estadisticas_generales: { total_pagos: 0, monto_total: 0 },
-        pagos_mes_actual: { cantidad: 0, monto: 0 },
-        pagos_por_metodo: {},
-        tendencia_semanal: [],
-      };
-    }
-  },
-
-  async exportarReporte(filters = {}, formato = 'excel') {
-    try {
-      const response = await apiClient.get('/pagos/exportar/', {
-        params: { ...buildParams(filters), formato },
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      // Backend responde CSV (aunque se solicite 'excel')
-      const extension = 'csv';
-      link.setAttribute('download', `reporte_pagos_${Date.now()}.${extension}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      return { success: true };
-    } catch (error) {
-      throw new Error(extractErrorMessage(error, 'Error al exportar el reporte de pagos'));
-    }
-  },
-
-  async getResumenPorCliente(clienteId, filters = {}) {
-    try {
-      const response = await apiClient.get(`/pagos/cliente/${clienteId}/resumen/`, {
-        params: buildParams(filters)
-      });
-      return response.data;
-    } catch (error) {
-      throw new Error(extractErrorMessage(error, 'Error al obtener el resumen de pagos del cliente'));
-    }
   }
 };

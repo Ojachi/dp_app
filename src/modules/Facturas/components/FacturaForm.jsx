@@ -29,16 +29,11 @@ const FacturaForm = ({
     fecha_vencimiento: '',
     valor_total: '',
     observaciones: '',
-    productos: []
   });
   
-  // Productos/Servicios ya no se manejan en este MVP
-  // Gestión inline de clientes/sucursales eliminada: selección únicamente de existentes.
   // Sucursales del cliente seleccionado
   const [sucursales, setSucursales] = useState([]);
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState('');
-  
-  // Cálculo automático eliminado: valor_total lo ingresa el usuario
 
   useEffect(() => {
     if (factura) {
@@ -52,7 +47,6 @@ const FacturaForm = ({
         fecha_vencimiento: factura.fecha_vencimiento || '',
         valor_total: factura.valor_total || '',
         observaciones: factura.observaciones || '',
-        productos: [] 
       });
       // Preseleccionar sucursal si viene en la factura
       const csId = factura.cliente_sucursal?.id || factura.cliente_sucursal_id || '';
@@ -146,10 +140,6 @@ const FacturaForm = ({
       label: `${cliente.nombre} - ${cliente.telefono || 'Sin teléfono'}`
     }))
   ];
-
-  // Selects de Vendedor/Distribuidor eliminados del UI; asignación es automática por Población
-
-  // Sin creación inline, no se requieren opciones de poblaciones aquí
 
   if (loading) {
     return <LoadingSpinner message="Cargando formulario..." />;

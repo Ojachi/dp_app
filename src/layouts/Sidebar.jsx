@@ -12,11 +12,8 @@ const Sidebar = ({ isOpen = true, onClose }) => {
   const { hasRole } = useAuth();
   const { contadorNuevas = 0 } = useAlertas({ autoLoad: FEATURE_FLAGS.alertas });
 
-  // Footer removido para evitar duplicar información del usuario (se muestra en el header)
-
   // Definir elementos de navegación con permisos
   const navItems = [
-    // Dashboard eliminado del menú lateral: no se usa en la app
     {
       to: '/facturas',
       label: 'Facturas',
@@ -52,12 +49,6 @@ const Sidebar = ({ isOpen = true, onClose }) => {
       to: '/parametrizacion',
       label: 'Parametrización',
       icon: 'fas fa-cogs',
-      roles: [USER_ROLES.GERENTE]
-    },
-    FEATURE_FLAGS.importacion && {
-      to: '/importacion',
-      label: 'Importar Excel',
-      icon: 'fas fa-file-upload',
       roles: [USER_ROLES.GERENTE]
     }
   ];
