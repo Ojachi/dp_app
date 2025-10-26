@@ -27,6 +27,8 @@ export const useAlertas = (options = {}) => {
         created_at: it.created_at || it.fecha_generacion || it.fecha_creacion || null,
         // tipo plano desde backend
         tipo: it.tipo || it.tipo_alerta?.tipo || it.tipo_alerta_tipo || it.tipo_alerta_nombre,
+        // subtipo (por_vencer | vencida) cuando aplique
+        subtipo: it.subtipo || it.alerta_subtipo || null,
       }));
       setAlertas(normalized);
       return { count: response?.count ?? normalized.length, results: normalized };
@@ -43,17 +45,22 @@ export const useAlertas = (options = {}) => {
   const loadContadores = useCallback(async () => {
     try {
       const data = await alertasService.getContadorAlertas();
-      // Backend retorna { alertas_nuevas, alertas_criticas }
+      // Backend retorna { alertas_nuevas, alertas_por_vencer, alertas_vencidas } (y clave legacy alertas_criticas)
       const normalized = {
         total: null,
         no_leidas: data.alertas_nuevas ?? 0,
-        criticas: data.alertas_criticas ?? 0,
+        criticas: (data.alertas_criticas ?? data.alertas_vencidas) ?? 0, // compatibilidad con UI existente
+        // Nuevas claves específicas por subtipo
+        por_vencer: data.alertas_por_vencer ?? 0,
+        vencidas: (data.alertas_vencidas ?? data.alertas_criticas) ?? 0,
+        // No provisto por backend actualmente
+        recientes: 0,
       };
       setContadores(normalized);
       return normalized;
     } catch (err) {
       console.error('Error al cargar contadores:', err);
-      setContadores({ total: 0, no_leidas: 0, criticas: 0 });
+      setContadores({ total: 0, no_leidas: 0, criticas: 0, por_vencer: 0, vencidas: 0, recientes: 0 });
     }
   }, []);
 
@@ -207,6 +214,9 @@ export const useAlertas = (options = {}) => {
   const marcarComoLeida = marcarLeida;
   const contadorNuevas = contadores?.no_leidas || 0;
   const contadorCriticas = contadores?.criticas || 0;
+  // Derivados opcionales para nuevos subtipos
+  const contadorPorVencer = contadores?.por_vencer || 0;
+  const contadorVencidas = contadores?.vencidas || contadores?.criticas || 0;
 
   // Efecto para cargar contadores al inicializar
   useEffect(() => {
@@ -237,6 +247,8 @@ export const useAlertas = (options = {}) => {
     marcarComoLeida,
     contadorNuevas,
     contadorCriticas,
+  contadorPorVencer,
+  contadorVencidas,
     
     // Utilidades
     clearError: () => setError(null),

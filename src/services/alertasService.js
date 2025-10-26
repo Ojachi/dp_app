@@ -26,10 +26,20 @@ export const alertasService = {
   async getContadorAlertas() {
     try {
       const response = await apiClient.get('/alertas/contador/');
-      return response.data; // { alertas_nuevas, alertas_criticas }
+      const data = response.data || {};
+      // Normalizar forma: siempre exponer por_vencer y vencidas además de claves legacy
+      const alertas_vencidas = data.alertas_vencidas ?? data.alertas_criticas ?? 0;
+      const alertas_por_vencer = data.alertas_por_vencer ?? 0;
+      const alertas_nuevas = data.alertas_nuevas ?? 0;
+      return {
+        alertas_nuevas,
+        alertas_criticas: alertas_vencidas, // compatibilidad
+        alertas_por_vencer,
+        alertas_vencidas,
+      };
     } catch (error) {
       // Datos de respaldo
-      return { alertas_nuevas: 0, alertas_criticas: 0 };
+      return { alertas_nuevas: 0, alertas_criticas: 0, alertas_por_vencer: 0, alertas_vencidas: 0 };
     }
   },
 
@@ -82,6 +92,15 @@ export const alertasService = {
     } catch (error) {
       return { results: [], count: 0 };
     }
+  },
+
+  // Helpers de conveniencia por subtipo
+  async getAlertasPorVencer(extraFilters = {}) {
+    return this.getAlertas({ subtipo: 'por_vencer', ...extraFilters });
+  },
+
+  async getAlertasVencidas(extraFilters = {}) {
+    return this.getAlertas({ subtipo: 'vencida', ...extraFilters });
   },
 
   // Obtener estadísticas de alertas
